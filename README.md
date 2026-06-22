@@ -4,6 +4,9 @@
 
 ```bash
 npx skills add https://github.com/cismous/platform-core-skills/tree/main/platform-api-sdk -a opencode -y
+```
+
+```bash
 npx skills add https://github.com/cismous/platform-core-skills/tree/main/deck -a opencode -y
 ```
 
