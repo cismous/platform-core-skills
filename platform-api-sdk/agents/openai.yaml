@@ -1,0 +1,7 @@
+interface:
+  display_name: "Platform API SDK"
+  short_description: "Type-safe client for platform-core APIs — datasets, records, auth, schema versions"
+  default_prompt: "Use $platform-api-sdk to interact with platform-core APIs for dataset CRUD, schema management, or auth."
+
+policy:
+  allow_implicit_invocation: true

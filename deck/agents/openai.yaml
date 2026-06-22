@@ -1,0 +1,7 @@
+interface:
+  display_name: "deck CLI"
+  short_description: "CLI tool for platform-core — manage apps, datasets, fields, records, and queries"
+  default_prompt: "Use $deck to manage platform-core resources via CLI — create datasets, add fields, query records."
+
+policy:
+  allow_implicit_invocation: true
