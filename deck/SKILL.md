@@ -43,8 +43,8 @@ deck
 │   │   └── submit <dataset-id> <schema-version-id>
 │   ├── fields (alias: f)
 │   │   ├── list <dataset-id> [--schema-version-id <svId>]
-│   │   ├── add <schema-version-id> --code <code> --type <type> [--required] [--ui-type <hint>] [--order N] [--default '<json>'] [--constraints '<json>']
-│   │   ├── update <field-id> [--code <new>] [--required] [--ui-type <hint>] [--order N] [--default '<json>'] [--constraints '<json>']
+│   │   ├── add <schema-version-id> --code <code> --type <type> [--label "<name>"] [--required] [--ui-type <hint>] [--order N] [--default '<json>'] [--constraints '<json>']
+│   │   ├── update <field-id> [--code <new>] [--label "<name>"] [--required] [--ui-type <hint>] [--order N] [--default '<json>'] [--constraints '<json>']
 │   │   └── delete <field-id>
 │   ├── query <dataset-id> --sql '<SQL>' [--limit N] [--timeout N] [--describe]
 │   └── records (alias: r)
@@ -112,7 +112,7 @@ deck datasets schema-versions list <dataset-id>
 deck datasets schema-versions create <dataset-id>
 
 # 3. Add the field to the draft
-deck datasets fields add <schema-version-id> --code title --type string --required
+deck datasets fields add <schema-version-id> --code title --type string --label "标题" --required
 
 # 4. Verify
 deck datasets fields list <dataset-id> --schema-version-id <schema-version-id>
@@ -251,6 +251,8 @@ Datasets are backed by PostgreSQL. Record data is stored in a JSONB column — e
 ## Field Data Types
 
 The `--type` flag for `fields add` accepts: `string`, `number`, `boolean`, `json`.
+
+The `--label` flag sets the field's display name (stored in `meta.fieldLabel`). It can be used when creating or updating a field.
 
 ## Data Input
 
