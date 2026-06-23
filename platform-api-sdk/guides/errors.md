@@ -16,7 +16,7 @@ class PlatformApiError extends Error {
 import { PlatformApiError } from "@platform/api-sdk";
 
 try {
-  const { record } = await platform.datasets.getRecord(datasetId, id);
+  const record = await platform.datasets.getRecord(datasetId, id);
   return record;
 } catch (e) {
   if (e instanceof PlatformApiError) {

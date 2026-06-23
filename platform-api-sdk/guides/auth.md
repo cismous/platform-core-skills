@@ -57,7 +57,7 @@ Returned `platform` is independent — you can hold multiple instances if your s
 const reader = createPlatformWithApiKey(process.env.READ_KEY!);
 const writer = createPlatformWithApiKey(process.env.WRITE_KEY!);
 
-const items = await reader.datasets.listRecords(datasetId);
+const { items } = await reader.datasets.listRecords(datasetId);
 await writer.datasets.createRecord(datasetId, { schemaVersionId: svId, data: items[0]?.data });
 ```
 

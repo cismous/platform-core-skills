@@ -64,7 +64,7 @@ deck
 │   └── edit
 ├── use <context>
 ├── auth
-│   ├── login [--api-key <key>] [--verify]
+│   ├── login [--api-key <key>] [--verify]  (--verify defaults to true, use --verify=false to skip)
 │   ├── logout
 │   ├── status
 │   └── whoami
@@ -84,6 +84,7 @@ deck
 | `--config <path>` | Override config file path |
 | `--json` | Output as JSON (for scripting / piping to `jq`) |
 | `--no-border` | Render table without box border (kubectl-style) |
+| `--version`, `-v` | Print version, commit, build date (deck root only) |
 
 ## Typical Workflows
 
