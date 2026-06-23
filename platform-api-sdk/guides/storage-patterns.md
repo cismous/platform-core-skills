@@ -13,10 +13,9 @@ Before picking a model, internalize three current limits of `@platform/api`:
 | Limit | Implication |
 |---|---|
 | `listRecords` has **no `where` filter** | Cannot fetch "records where field X == Y" efficiently |
-| `listRecords` has **no pagination** | Whole table loads in one shot |
 | `listRecords` has **no field projection** | All `data` keys returned, including large json blobs |
 
-If your data model needs server-side filtering or pagination, you must either (a) split into smaller datasets or (b) extend `@platform/api` — not within this skill's scope.
+If your data model needs server-side filtering, you must either (a) split into smaller datasets or (b) extend `@platform/api` — not within this skill's scope.
 
 ---
 

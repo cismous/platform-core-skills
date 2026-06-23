@@ -75,7 +75,7 @@ interface OrderData { title: string; qty: number; }
 const { items } = await platform.datasets.listRecords<OrderData>(datasetId);
 // items[0].data.title → string ✅
 
-const { record } = await platform.datasets.createRecord<OrderData>(datasetId, {
+const record = await platform.datasets.createRecord<OrderData>(datasetId, {
   schemaVersionId: svId,
   data: { title: "hello", qty: 3 },
 });
@@ -103,7 +103,7 @@ import { createPlatformWithApiKey, PlatformApiError } from "@platform/api-sdk";
 const platform = createPlatformWithApiKey(process.env.PLATFORM_API_KEY!);
 
 const { items } = await platform.datasets.listRecords(datasetId);
-const { record } = await platform.datasets.createRecord(datasetId, {
+const record = await platform.datasets.createRecord(datasetId, {
   schemaVersionId: svId,
   data: { title: "from-server", qty: 1 },
 });

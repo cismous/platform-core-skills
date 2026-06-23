@@ -11,7 +11,7 @@ import { platform, auth, authApiKey } from "@platform/api-sdk";
 
 await platform.datasets.listRecords(datasetId);
 const session = await auth.getAuthSession();
-const { records: keys } = await authApiKey.list();
+const keys = await authApiKey.listApiKeys();
 ```
 
 - Endpoints are fixed: 4 primary `*.ingress.xxbobo.cn` + 1 backup `ingress-sure.xxbobo.cn`
@@ -70,7 +70,7 @@ import {
 
 const client = createApiClient({
   primaryEndpoints: parsePrimaryEndpoints(
-    import.meta.env.VITE_PRIMARY_ENDPOINTS, // "https://api1.../api/platform,https://api2.../api/platform"
+    import.meta.env.VITE_PRIMARY_ENDPOINTS, // "https://api1...,https://api2..." (bare site roots, no /api/platform suffix)
   ),
   backupEndpoint: `${import.meta.env.VITE_BACKUP_ENDPOINT}${PLATFORM_API_PREFIX}`,
   credentials: "include",

@@ -42,12 +42,12 @@ type PlatformRecord<T = Record<string, unknown>> = {
 };
 ```
 
-The platform does **not** paginate `listRecords` by default — large datasets should be split or filtered upstream (or extend the API).
+The platform **does** paginate `listRecords` — pass `{ page, pageSize }` and receive `{ items, pagination }`.
 
 ## Get one
 
 ```ts
-const { record } = await platform.datasets.getRecord(datasetId, recordId);
+const record = await platform.datasets.getRecord(datasetId, recordId);
 // 泛型：getRecord<OrderData>(datasetId, recordId) → record.data 为 OrderData
 ```
 
@@ -56,7 +56,7 @@ const { record } = await platform.datasets.getRecord(datasetId, recordId);
 ## Create
 
 ```ts
-const { record } = await platform.datasets.createRecord(datasetId, {
+const record = await platform.datasets.createRecord(datasetId, {
   schemaVersionId: svId,
   data: {
     title: "First record",
@@ -95,7 +95,7 @@ Soft-delete on the server (history retained). Re-creating with the same logical 
 When a record's schema version is migrated, the prior shape is snapshotted. Inspect with:
 
 ```ts
-const { snapshots } = await platform.datasets.listRecordHistory(datasetId, recordId);
+const snapshots = await platform.datasets.listRecordHistory(datasetId, recordId);
 // snapshots: RecordSnapshotRow[] (newest first; contains data + schemaVersionId + migrationBatchId)
 ```
 
@@ -111,14 +111,16 @@ const opts = await platform.datasets.getFieldFormOptions(
 );
 ```
 
-Returned `FieldOptionsResponse` is a discriminated union — use the type guards:
+Returned `FieldOptionsResponse` contains `sourceKind` and `options`:
 
 ```ts
-import { isRecordOptionFieldSingle, isRecordOptionFieldMulti } from "@platform/api-sdk";
-
-if (isRecordOptionFieldSingle(opts)) {
-  opts.options.forEach((o) => /* { value, label } */);
-}
+const opts = await platform.datasets.getFieldFormOptions(
+  datasetId,
+  schemaVersionId,
+  fieldCode,
+);
+// opts.sourceKind: "static" | "dataset_ref"
+// opts.options: { value: string; label: string; disabled?: boolean }[]
 ```
 
 ## Common 4xx pitfalls

@@ -15,7 +15,7 @@ draft ──submitSchemaVersion──> pending_publish ──publish──> publ
 ## List versions
 
 ```ts
-const { schemaVersions } = await platform.datasets.listSchemaVersions(datasetId);
+const schemaVersions = await platform.datasets.listSchemaVersions(datasetId);
 // SchemaVersionRow[] — sort/pick by status
 const draft = schemaVersions.find((v) => v.status === "draft");
 const published = schemaVersions.find((v) => v.status === "published");
@@ -25,12 +25,12 @@ const published = schemaVersions.find((v) => v.status === "published");
 
 ```ts
 // Empty new draft (rare — usually clone the published one)
-const { schemaVersion } = await platform.datasets.createSchemaVersion(datasetId, {
+const schemaVersion = await platform.datasets.createSchemaVersion(datasetId, {
   meta: { note: "v2 cleanup" },
 });
 
 // Clone all fields from an existing version (typical for "edit current schema")
-const { schemaVersion: v2 } = await platform.datasets.createSchemaVersion(datasetId, {
+const v2 = await platform.datasets.createSchemaVersion(datasetId, {
   cloneFromVersionId: published.id,
   meta: { note: "v2 cleanup" },
 });
@@ -50,11 +50,11 @@ await platform.datasets.deleteSchemaVersion(datasetId, draftVersionId);
 
 ```ts
 // List
-const { fields } = await platform.datasets.listFields(datasetId, schemaVersionId);
+const fields = await platform.datasets.listFields(datasetId, schemaVersionId);
 // schemaVersionId is optional — omit to get the published version's fields
 
 // Create (against a specific schema version)
-const { field } = await platform.datasets.createField(schemaVersionId, {
+const field = await platform.datasets.createField(schemaVersionId, {
   fieldCode: "priority",
   dataType: "int",
   uiType: "select",
@@ -106,10 +106,10 @@ If `migrationBatchId` is null, no existing records needed migration.
 
 ```ts
 // All batches for a dataset
-const { batches } = await platform.datasets.listMigrationBatches(datasetId);
+const batches = await platform.datasets.listMigrationBatches(datasetId);
 
 // One batch
-const { batch } = await platform.datasets.getMigrationBatch(datasetId, migrationBatchId);
+const batch = await platform.datasets.getMigrationBatch(datasetId, migrationBatchId);
 // batch.status: "pending" | "running" | "completed" | "failed" | "cancelled"
 // batch.processedCount / batch.totalCount / batch.errorSamples
 ```
@@ -133,7 +133,7 @@ await platform.datasets.patch(datasetId, {
 Each rule fires on record events (create / update / delete) and posts to one or more notification channels:
 
 ```ts
-const { rule } = await platform.datasets.createWorkflowRule(datasetId, {
+const rule = await platform.datasets.createWorkflowRule(datasetId, {
   name: "notify-on-new-order",
   trigger: "record.created",
   enabled: true,
@@ -147,7 +147,7 @@ await platform.datasets.patchWorkflowRule(datasetId, rule.id, { enabled: false }
 await platform.datasets.deleteWorkflowRule(datasetId, rule.id);
 ```
 
-Notification channels themselves live under `platform.apps.{listNotificationChannels, createNotificationChannel, deleteNotificationChannel}`.
+Notification channels themselves live under `platform.apps.{listNotificationChannels, createNotificationChannel, patchNotificationChannel, deleteNotificationChannel}`.
 
 ## Common mistakes
 

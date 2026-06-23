@@ -27,9 +27,9 @@ deck app get            # confirm the resolved app
 
 ```
 deck
-├── init --app <code|id> [--tenant <orgId>] [--force]
+├── init --app <code|id> [--tenant <orgId>] [--context <name>] [--force]
 ├── app
-│   ├── list [--tenant-id <orgId>]
+│   ├── list [--tenant-id <orgId>] [--page N] [--page-size N]
 │   ├── get
 │   └── create --code <code> [--tenant-id <orgId>] [--public-read] [--meta '{}']
 ├── datasets (alias: ds)
@@ -39,15 +39,15 @@ deck
 │   ├── publish <dataset-id> --schema-version-id <svId> [--migration '{"defaults":{...},"renames":{...}}']
 │   ├── schema-versions (alias: sv)
 │   │   ├── list <dataset-id>
-│   │   ├── create <dataset-id> [--clone-from <svId>] [--version-no N] [--parent-version-id <id>]
+│   │   ├── create <dataset-id> [--clone-from <svId>] [--version-no N] [--parent-version-id <id>] [--meta '{}']
 │   │   └── submit <dataset-id> <schema-version-id>
 │   ├── fields (alias: f)
 │   │   ├── list <dataset-id> [--schema-version-id <svId>]
 │   │   ├── add <schema-version-id> --code <code> --type <type> [--label "<name>"] [--required] [--ui-type <hint>] [--order N] [--default '<json>'] [--constraints '<json>']
 │   │   ├── update <field-id> [--code <new>] [--label "<name>"] [--required] [--ui-type <hint>] [--order N] [--default '<json>'] [--constraints '<json>']
-│   │   └── delete <field-id>
+│   │   └── delete <field-id> (alias: rm)
 │   ├── query <dataset-id> --sql '<SQL>' [--limit N] [--timeout N] [--describe]
-│   └── records (alias: r)
+│   └── records (alias: r, record)
 │       ├── list <dataset-id> [--page N] [--page-size N]
 │       ├── get <dataset-id> <record-id>
 │       ├── create <dataset-id> --schema-version-id <svId> --data '{"field":"value"}'
@@ -64,12 +64,13 @@ deck
 │   └── edit
 ├── use <context>
 ├── auth
-│   ├── login [--api-key <key>] [--no-verify]
+│   ├── login [--api-key <key>] [--verify]
 │   ├── logout
 │   ├── status
 │   └── whoami
 ├── query --datasets "alias=code,..." --sql '<SQL>' [--limit N] [--timeout N] [--describe]
-├── upgrade
+├── whoami
+├── upgrade [--check]
 ├── version
 └── completion [bash|zsh|fish|powershell]
 ```

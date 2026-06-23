@@ -57,8 +57,8 @@ Returned `platform` is independent — you can hold multiple instances if your s
 const reader = createPlatformWithApiKey(process.env.READ_KEY!);
 const writer = createPlatformWithApiKey(process.env.WRITE_KEY!);
 
-const data = await reader.datasets.listRecords(datasetId);
-await writer.datasets.createRecord(datasetId, { data });
+const items = await reader.datasets.listRecords(datasetId);
+await writer.datasets.createRecord(datasetId, { schemaVersionId: svId, data: items[0]?.data });
 ```
 
 ### Custom endpoints + API key (rare)
@@ -96,12 +96,12 @@ const platform = createPlatformResourceApi(client);
 ```ts
 import { authApiKey } from "@platform/api-sdk";
 
-const { key, record } = await authApiKey.create({
+const response = await authApiKey.createApiKey({
   name: "ci-bot",
   permissions: { datasets: ["read", "write"] },
 });
-console.log("Save this — only shown once:", key);
-console.log("DB record:", record);
+console.log("Save this — only shown once:", response.key);
+console.log("DB record:", response););
 ```
 
 `authApiKey.getAuthSessionWithApiKey(key)` exchanges a key for a session payload — niche, prefer the header flow.
