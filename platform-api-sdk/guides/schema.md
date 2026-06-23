@@ -124,7 +124,7 @@ Not schema-related but lives on `datasets`:
 await platform.datasets.patch(datasetId, {
   isPublicRead: true,                       // anonymous read access
   recordWritePolicy: "creator_own",         // override app-level policy; null = inherit
-  meta: { displayName: "Orders v2" },
+  meta: { title: "订单数据", description: "订单下拉引用的主数据" },
 });
 ```
 
