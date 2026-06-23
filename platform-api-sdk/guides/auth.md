@@ -12,7 +12,7 @@ Two modes, one rule: **never mix them in the same request**.
 The user logs in through `/api/auth/sign-in/*`, Better Auth sets an HttpOnly cookie, and every subsequent platform call rides on it.
 
 ```ts
-import { platform, auth } from "@platform/api-sdk";
+import { platform, auth } from "@base/api-sdk";
 
 // All resource methods just work; auth is transparent.
 const { items } = await platform.datasets.listRecords(datasetId);
@@ -29,7 +29,7 @@ CORS: the platform API must allow the consumer origin (`CORS_ORIGINS` env on the
 For server-to-server, CLI, or any non-browser caller.
 
 ```ts
-import { createPlatformWithApiKey, PlatformApiError } from "@platform/api-sdk";
+import { createPlatformWithApiKey, PlatformApiError } from "@base/api-sdk";
 
 const platform = createPlatformWithApiKey(process.env.PLATFORM_API_KEY!);
 
@@ -71,7 +71,7 @@ import {
   createPlatformResourceApi,
   apiKeyAuthHeaders,
   type ApiClient,
-} from "@platform/api-sdk";
+} from "@base/api-sdk";
 
 function withDefaultHeaders(raw: ApiClient, headers: HeadersInit): ApiClient {
   return {
@@ -94,7 +94,7 @@ const platform = createPlatformResourceApi(client);
 `authApiKey` gives list / create / get / update / delete for keys. These admin endpoints **require** a logged-in session (cookie), not another API key:
 
 ```ts
-import { authApiKey } from "@platform/api-sdk";
+import { authApiKey } from "@base/api-sdk";
 
 const response = await authApiKey.createApiKey({
   name: "ci-bot",

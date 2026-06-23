@@ -13,7 +13,7 @@ class PlatformApiError extends Error {
 ## Catch pattern
 
 ```ts
-import { PlatformApiError } from "@platform/api-sdk";
+import { PlatformApiError } from "@base/api-sdk";
 
 try {
   const record = await platform.datasets.getRecord(datasetId, id);
