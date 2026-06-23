@@ -5,8 +5,8 @@
 ## List
 
 ```ts
-const { records } = await platform.datasets.listRecords(datasetId);
-// records: PlatformRecord[]
+const { items } = await platform.datasets.listRecords(datasetId);
+// items: PlatformRecord[]
 ```
 
 `PlatformRecord` shape:

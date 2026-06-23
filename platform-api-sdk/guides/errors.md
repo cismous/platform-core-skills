@@ -87,8 +87,8 @@ useEffect(() => {
   let cancelled = false;
   (async () => {
     try {
-      const { records } = await platform.datasets.listRecords(datasetId);
-      if (!cancelled) setRows(records);
+      const { items } = await platform.datasets.listRecords(datasetId);
+      if (!cancelled) setRows(items);
     } catch (e) {
       if (!cancelled && e instanceof PlatformApiError) {
         setError(e.status === 404 ? "no data" : `${e.status}`);

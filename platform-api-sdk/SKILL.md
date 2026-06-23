@@ -69,7 +69,7 @@ import { platform, PlatformApiError } from "@platform/api-sdk";
 
 // CRUD records on a dataset. datasetId resolved out-of-band
 // (e.g. listApps → listDatasets, then cached).
-const { records } = await platform.datasets.listRecords(datasetId);
+const { items } = await platform.datasets.listRecords(datasetId);
 
 const { record } = await platform.datasets.createRecord(datasetId, {
   data: { title: "hello", qty: 3 },
@@ -97,7 +97,7 @@ import { createPlatformWithApiKey, PlatformApiError } from "@platform/api-sdk";
 
 const platform = createPlatformWithApiKey(process.env.PLATFORM_API_KEY!);
 
-const { records } = await platform.datasets.listRecords(datasetId);
+const { items } = await platform.datasets.listRecords(datasetId);
 const { record } = await platform.datasets.createRecord(datasetId, {
   data: { title: "from-server", qty: 1 },
 });

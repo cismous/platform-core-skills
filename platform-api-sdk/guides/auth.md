@@ -15,7 +15,7 @@ The user logs in through `/api/auth/sign-in/*`, Better Auth sets an HttpOnly coo
 import { platform, auth } from "@platform/api-sdk";
 
 // All resource methods just work; auth is transparent.
-const { records } = await platform.datasets.listRecords(datasetId);
+const { items } = await platform.datasets.listRecords(datasetId);
 
 // Reading the current session
 const session = await auth.getAuthSession(); // null if not logged in
@@ -34,7 +34,7 @@ import { createPlatformWithApiKey, PlatformApiError } from "@platform/api-sdk";
 const platform = createPlatformWithApiKey(process.env.PLATFORM_API_KEY!);
 
 try {
-  const { records } = await platform.datasets.listRecords(datasetId);
+  const { items } = await platform.datasets.listRecords(datasetId);
   // ...
 } catch (e) {
   if (e instanceof PlatformApiError && e.status === 401) {
