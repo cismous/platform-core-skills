@@ -248,6 +248,12 @@ Datasets are backed by PostgreSQL. Record data is stored in a JSONB column — e
 - Queries and filters operate on JSONB, not native columns — consider this when evaluating performance for large datasets or complex filtering.
 - Adding/removing fields does not require DDL changes; schema evolution is handled at the application layer via schema versions.
 
+## Field Code Naming Convention
+
+`fieldCode` 必须符合 `^[a-z][a-z0-9_]{0,62}$` 格式（小写字母开头，仅含小写字母、数字、下划线，最长 63 字符）。服务端会自动将 `fieldCode` 转为全小写存储，因此 `--code orderId` 实际写入的是 `orderid`。
+
+**建议使用下划线分隔命名**（snake_case），例如 `order_id`、`created_at`，而不是驼峰 `orderId`。因为 `fieldCode` 会直接作为 SQL 查询中的列名，小写下划线风格与 PostgreSQL 原生标识符习惯一致，避免大小写混淆。
+
 ## Field Data Types
 
 The `--type` flag for `fields add` accepts: `string`, `number`, `boolean`, `json`.

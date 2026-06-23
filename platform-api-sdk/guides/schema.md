@@ -46,6 +46,8 @@ await platform.datasets.deleteSchemaVersion(datasetId, draftVersionId);
 
 ## Fields
 
+`fieldCode` 必须符合 `^[a-z][a-z0-9_]{0,62}$` 格式（小写字母开头，仅含小写字母、数字、下划线，最长 63 字符）。服务端会自动转为全小写存储，建议使用 snake_case 命名（如 `order_id`），避免驼峰（`orderId` 会被存为 `orderid`）。
+
 ```ts
 // List
 const { fields } = await platform.datasets.listFields(datasetId, schemaVersionId);
