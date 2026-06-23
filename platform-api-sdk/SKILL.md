@@ -67,20 +67,25 @@ The client automatically fails over to backup if all primaries return errors.
 ```ts
 import { platform, PlatformApiError } from "@platform/api-sdk";
 
-// CRUD records on a dataset. datasetId resolved out-of-band
-// (e.g. listApps → listDatasets, then cached).
-const { items } = await platform.datasets.listRecords(datasetId);
+// 业务数据类型（可选，用于类型化 data 字段）
+interface OrderData { title: string; qty: number; }
 
-const { record } = await platform.datasets.createRecord(datasetId, {
+// CRUD records on a dataset. datasetId / svId resolved out-of-band
+// (e.g. listApps → listDatasets → listSchemaVersions, then cached).
+const { items } = await platform.datasets.listRecords<OrderData>(datasetId);
+// items[0].data.title → string ✅
+
+const { record } = await platform.datasets.createRecord<OrderData>(datasetId, {
+  schemaVersionId: svId,
   data: { title: "hello", qty: 3 },
 });
 
-await platform.datasets.patchRecord(datasetId, record.id, { data: { qty: 4 } });
+await platform.datasets.patchRecord<OrderData>(datasetId, record.id, { data: { qty: 4 } });
 await platform.datasets.deleteRecord(datasetId, record.id);
 
 // Errors carry status + bodyText + url.
 try {
-  await platform.datasets.getRecord(datasetId, "missing");
+  await platform.datasets.getRecord<OrderData>(datasetId, "missing");
 } catch (e) {
   if (e instanceof PlatformApiError && e.status === 404) {
     // not found
@@ -99,6 +104,7 @@ const platform = createPlatformWithApiKey(process.env.PLATFORM_API_KEY!);
 
 const { items } = await platform.datasets.listRecords(datasetId);
 const { record } = await platform.datasets.createRecord(datasetId, {
+  schemaVersionId: svId,
   data: { title: "from-server", qty: 1 },
 });
 ```

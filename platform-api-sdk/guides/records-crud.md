@@ -9,14 +9,32 @@ const { items } = await platform.datasets.listRecords(datasetId);
 // items: PlatformRecord[]
 ```
 
+### 泛型类型化 data 字段
+
+业务知道自己的字段结构时，可通过泛型让 `data` 获得完整类型推导：
+
+```ts
+interface OrderData {
+  title: string;
+  qty: number;
+  status: "pending" | "done";
+}
+
+const { items } = await platform.datasets.listRecords<OrderData>(datasetId);
+items[0].data.title;  // ✅ string
+items[0].data.qty;    // ✅ number
+```
+
+不传泛型时 `data` 默认为 `Record<string, unknown>`，和之前完全兼容。
+
 `PlatformRecord` shape:
 
 ```ts
-type PlatformRecord = {
+type PlatformRecord<T = Record<string, unknown>> = {
   id: string;
   datasetId?: string;
   schemaVersionId?: string;
-  data: Record<string, unknown>;   // <-- payload by field code
+  data: T;                            // <-- 泛型化，默认 Record<string, unknown>
   createdBy?: string | null;
   createdAt?: string;
   updatedBy?: string | null;
@@ -30,6 +48,7 @@ The platform does **not** paginate `listRecords` by default — large datasets s
 
 ```ts
 const { record } = await platform.datasets.getRecord(datasetId, recordId);
+// 泛型：getRecord<OrderData>(datasetId, recordId) → record.data 为 OrderData
 ```
 
 404 if not found or not visible under RLS (the SDK does not distinguish — both look like 404 to the caller).
@@ -38,6 +57,7 @@ const { record } = await platform.datasets.getRecord(datasetId, recordId);
 
 ```ts
 const { record } = await platform.datasets.createRecord(datasetId, {
+  schemaVersionId: svId,
   data: {
     title: "First record",
     qty: 3,
@@ -46,7 +66,9 @@ const { record } = await platform.datasets.createRecord(datasetId, {
 });
 ```
 
-`data` keys are field codes from the current schema version. Unknown keys → 422.
+`data` 的 key 必须匹配当前 schema 版本的 fieldCode。未知 key → 422。
+
+泛型用法：`createRecord<OrderData>(datasetId, { schemaVersionId, data })` → 传参时 `data` 字段受约束。
 
 ## Update (patch)
 
@@ -56,7 +78,9 @@ await platform.datasets.patchRecord(datasetId, recordId, {
 });
 ```
 
-Patch is a **shallow merge** on `data`. To clear a field, pass `null` (subject to that field's `isRequired` constraint).
+Patch 是 **shallow merge**。清空字段传 `null`（受 `isRequired` 约束）。
+
+泛型用法：`patchRecord<OrderData>(datasetId, recordId, { data: { qty: 4 } })` → `data` 字段受 `Partial<OrderData>` 约束。
 
 ## Delete
 
