@@ -1,8 +1,8 @@
 ---
 name: platform-api-sdk
-description: Calls the platform `/api/platform` and `/api/auth` services through the `@base/api-sdk` SDK. Provides zero-config default singletons (`platform`, `auth`, `authApiKey`) for production ingress; ships `createPlatformWithApiKey(key)` for server-to-server flows and `createApiClient` + `buildPlatformApiClientConfig` for local dev / self-hosted endpoints. Covers CRUD on datasets — records, fields, schema versions, publishing, migration plans, workflow rules. Triggers when code imports `@base/api-sdk`, when a project has `"@base/api-sdk"` in `package.json`, or when a question mentions platform datasets / records / schema versions / `x-api-key` / `PlatformApiError` / `createPlatformResourceApi` / `createPlatformWithApiKey`.
+description: Calls the platform `/api/platform` and `/api/auth` services through the `@platform/api-sdk` SDK. Provides zero-config default singletons (`platform`, `auth`, `authApiKey`) for production ingress; ships `createPlatformWithApiKey(key)` for server-to-server flows and `createApiClient` + `buildPlatformApiClientConfig` for local dev / self-hosted endpoints. Covers CRUD on datasets — records, fields, schema versions, publishing, migration plans, workflow rules. Triggers when code imports `@platform/api-sdk`, when a project has `"@platform/api-sdk"` in `package.json`, or when a question mentions platform datasets / records / schema versions / `x-api-key` / `PlatformApiError` / `createPlatformResourceApi` / `createPlatformWithApiKey`.
 
-# @base/api-sdk
+# @platform/api-sdk
 
 A typed JSON client for the platform backend. Three ingress paths:
 
@@ -17,8 +17,8 @@ The SDK is **transport-only** — no caching, no retry, no auth state. Bring you
 
 Use this skill when:
 
-- The project's `package.json` lists `"@base/api-sdk"` as a dependency
-- A file imports from `@base/api-sdk` (root, or any subpath)
+- The project's `package.json` lists `"@platform/api-sdk"` as a dependency
+- A file imports from `@platform/api-sdk` (root, or any subpath)
 - The user asks about platform CRUD, datasets, records, schema versions, fields, publishing, API keys, or session auth in the context of this SDK
 - The user pastes `platform.`, `createPlatformWithApiKey`, `PlatformApiError`, `createPlatformResourceApi`, `createApiClient`, `apiKeyAuthHeaders`, or any exported symbol from this package
 
@@ -27,9 +27,9 @@ Do **not** use this skill for unrelated REST/fetch tasks, generic OpenAPI client
 ## Install
 
 ```fish
-bun add @base/api-sdk       # bun
-npm install @base/api-sdk   # npm
-pnpm add @base/api-sdk      # pnpm
+bun add @platform/api-sdk       # bun
+npm install @platform/api-sdk   # npm
+pnpm add @platform/api-sdk      # pnpm
 ```
 
 Peer requirement: a runtime with global `fetch` and `Headers` (Bun, Node ≥ 18, modern browsers).
@@ -42,8 +42,8 @@ The SDK ships **three layers**. 99% of consumers want layer 1.
 
 | Layer | Import | When |
 |---|---|---|
-| **1. Default singleton** | `import { platform } from "@base/api-sdk"` | Production, browser cookie session, zero config |
-| **2. API-key factory** | `import { createPlatformWithApiKey } from "@base/api-sdk"` | Production, server-to-server / CLI |
+| **1. Default singleton** | `import { platform } from "@platform/api-sdk"` | Production, browser cookie session, zero config |
+| **2. API-key factory** | `import { createPlatformWithApiKey } from "@platform/api-sdk"` | Production, server-to-server / CLI |
 | **3. Low-level builder** | `createApiClient` + `buildPlatformApiClientConfig` | Local dev (localhost), self-hosted (different domain), custom transport |
 
 Endpoints in layers 1 & 2 are fixed to production ingress (same constants as `console-web` Dockerfile):
@@ -63,7 +63,7 @@ The client automatically fails over to backup if all primaries return errors.
 ## 30-second quick start: browser SPA (cookie session)
 
 ```ts
-import { platform, PlatformApiError } from "@base/api-sdk";
+import { platform, PlatformApiError } from "@platform/api-sdk";
 
 // 业务数据类型（可选，用于类型化 data 字段）
 interface OrderData { title: string; qty: number; }
@@ -96,7 +96,7 @@ Auth: the default `platform` instance uses `credentials: "include"`, so the Bett
 ## 30-second quick start: server-to-server (API key)
 
 ```ts
-import { createPlatformWithApiKey, PlatformApiError } from "@base/api-sdk";
+import { createPlatformWithApiKey, PlatformApiError } from "@platform/api-sdk";
 
 const platform = createPlatformWithApiKey(process.env.PLATFORM_API_KEY!);
 
@@ -116,7 +116,7 @@ import {
   createApiClient,
   createPlatformResourceApi,
   buildPlatformApiClientConfig,
-} from "@base/api-sdk";
+} from "@platform/api-sdk";
 
 // Local dev pointing at http://localhost:1005
 const client = createApiClient(
@@ -132,7 +132,7 @@ See [guides/setup.md](./guides/setup.md) for resilient DDNS config and per-env w
 ## Module map
 
 ```
-@base/api-sdk
+@platform/api-sdk
 │
 ├── platform                        # default singleton (cookie session, prod ingress)
 ├── auth                            # auth-server session API singleton

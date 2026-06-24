@@ -7,7 +7,7 @@ Three layers. Pick the lowest one that works.
 Use when consuming production platform-core from a browser SPA or a Node/Bun service with cookie session.
 
 ```ts
-import { platform, auth, authApiKey } from "@base/api-sdk";
+import { platform, auth, authApiKey } from "@platform/api-sdk";
 
 await platform.datasets.listRecords(datasetId);
 const session = await auth.getAuthSession();
@@ -24,7 +24,7 @@ const keys = await authApiKey.listApiKeys();
 Use for CLIs, background jobs, webhooks, or any non-browser caller authenticating with `x-api-key`.
 
 ```ts
-import { createPlatformWithApiKey } from "@base/api-sdk";
+import { createPlatformWithApiKey } from "@platform/api-sdk";
 
 const platform = createPlatformWithApiKey(process.env.PLATFORM_API_KEY!);
 await platform.datasets.listRecords(datasetId);
@@ -48,7 +48,7 @@ import {
   createApiClient,
   createPlatformResourceApi,
   buildPlatformApiClientConfig,
-} from "@base/api-sdk";
+} from "@platform/api-sdk";
 
 const client = createApiClient(
   buildPlatformApiClientConfig({ baseUrl: "http://localhost:1005" }), // site root only — no /api/platform suffix
@@ -66,7 +66,7 @@ import {
   createPlatformResourceApi,
   parsePrimaryEndpoints,
   PLATFORM_API_PREFIX,
-} from "@base/api-sdk";
+} from "@platform/api-sdk";
 
 const client = createApiClient({
   primaryEndpoints: parsePrimaryEndpoints(
@@ -91,7 +91,7 @@ import {
   createAuthSessionApi,
   createAuthApiKeyApi,
   buildAuthApiClientConfig,
-} from "@base/api-sdk";
+} from "@platform/api-sdk";
 
 const authClient = createApiClient(
   buildAuthApiClientConfig({ baseUrl: "http://localhost:1006" }),
@@ -105,7 +105,7 @@ const authApiKey = createAuthApiKeyApi(authClient);
 ```ts
 // app boot — nothing to do for layer 1/2
 // shutdown / hot reload (rare)
-import { destroyDefaultClients } from "@base/api-sdk";
+import { destroyDefaultClients } from "@platform/api-sdk";
 destroyDefaultClients();
 ```
 

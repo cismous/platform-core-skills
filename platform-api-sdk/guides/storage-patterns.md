@@ -127,7 +127,7 @@ dataset:  documents
     storageKey (text)   ← s3://bucket/path or minio key
 ```
 
-The `data` field in the dataset record carries only the **pointer + metadata**. The bytes live in S3 / MinIO / R2 / wherever — out of scope of `@base/api-sdk`.
+The `data` field in the dataset record carries only the **pointer + metadata**. The bytes live in S3 / MinIO / R2 / wherever — out of scope of `@platform/api-sdk`.
 
 **Trade-offs:**
 
