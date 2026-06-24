@@ -52,7 +52,8 @@ deck
 │       ├── get <dataset-id> <record-id>
 │       ├── create <dataset-id> --schema-version-id <svId> --data '{"field":"value"}'
 │       ├── patch <dataset-id> <record-id> --data '{"field":"newValue"}'
-│       └── delete <dataset-id> <record-id>
+│       ├── delete <dataset-id> <record-id>
+│       └── import <dataset-id> --file <path>  # 批量导入 JSON 数组或 NDJSON，按 500 条分批
 ├── config
 │   ├── init
 │   ├── set <key> <value>
@@ -162,6 +163,48 @@ deck datasets records get <dataset-id> <record-id>
 ```bash
 deck datasets records patch <dataset-id> <record-id> --data '{"title":"Updated"}'
 ```
+
+### Batch import records
+
+大规模数据同步时使用，跳过工作流通知避免日志风暴。支持 JSON 数组和 NDJSON 两种格式，按 500 条/批自动分割调用 API。
+
+```bash
+# JSON 数组格式
+deck datasets records import <dataset-id> --file records.json
+
+# NDJSON 格式（每行一条 JSON，适合超大文件流式读取）
+deck datasets records import <dataset-id> --file records.ndjson
+
+# 从 stdin 读取
+cat data.json | deck datasets records import <dataset-id> --file @-
+```
+
+文件格式示例（JSON 数组）：
+```json
+[
+  {"data": {"title": "Hello", "qty": 3}},
+  {"data": {"title": "World", "qty": 5}}
+]
+```
+
+NDJSON 格式：
+```
+{"data": {"title": "Hello", "qty": 3}}
+{"data": {"title": "World", "qty": 5}}
+```
+
+输出示例：
+```
+[1/2000] 500/500 inserted (0 errors)
+[2/2000] 998/1000 inserted (2 errors)
+  error at index 3: 字段「title」的值已存在
+Done: 998000 inserted, 2000 errors, 1000000 total
+```
+
+注意：
+- 导入期间不触发工作流 webhook / APNs 推送
+- 字段校验与逐条创建相同（必填、类型、唯一性等）
+- 唯一性冲突在批次内和跨批次都会被检测
 
 ### Query records with SQL
 

@@ -90,6 +90,24 @@ const { ok, id } = await platform.datasets.deleteRecord(datasetId, recordId);
 
 Soft-delete on the server (history retained). Re-creating with the same logical key is allowed — IDs differ.
 
+## Batch import
+
+大规模数据导入（跳过工作流通知，避免日志风暴），一次最多 500 条：
+
+```ts
+const { inserted, errors, total } = await platform.datasets.batchImportRecords(datasetId, {
+  records: [
+    { data: { title: "Item 1", qty: 10 } },
+    { data: { title: "Item 2", qty: 20 } },
+  ],
+});
+// inserted: number — 成功插入条数
+// errors: { index: number; error: string }[] — 失败记录及原因
+// total: number — 总数
+```
+
+数据量超过 500 条时，客户端自行分片循环调用。导入期间不触发工作流 webhook/APNs 推送。
+
 ## Record history (migration snapshots)
 
 When a record's schema version is migrated, the prior shape is snapshotted. Inspect with:
