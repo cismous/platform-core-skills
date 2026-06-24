@@ -1,6 +1,8 @@
 ---
 name: platform-api-sdk
 description: Calls the platform `/api/platform` and `/api/auth` services through the `@platform/api-sdk` SDK. Provides zero-config default singletons (`platform`, `auth`, `authApiKey`) for production ingress; ships `createPlatformWithApiKey(key)` for server-to-server flows and `createApiClient` + `buildPlatformApiClientConfig` for local dev / self-hosted endpoints. Covers CRUD on datasets — records, fields, schema versions, publishing, migration plans, workflow rules. Triggers when code imports `@platform/api-sdk`, when a project has `"@platform/api-sdk"` in `package.json`, or when a question mentions platform datasets / records / schema versions / `x-api-key` / `PlatformApiError` / `createPlatformResourceApi` / `createPlatformWithApiKey`.
+user-invocable: false
+---
 
 # @platform/api-sdk
 
