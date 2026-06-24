@@ -44,6 +44,19 @@ type PlatformRecord<T = Record<string, unknown>> = {
 
 The platform **does** paginate `listRecords` — pass `{ page, pageSize }` and receive `{ items, pagination }`.
 
+### 获取记录总数
+
+`listRecords` 返回的 `pagination.total` 和 `countRecords` 接口均读取 `dataset.recordCount` 物化列（INSERT/软删/恢复时由触发器自动 ±1），毫秒级返回。**不要**用 `deck query` 执行 `SELECT COUNT(*) FROM records`，百万级数据会超时。
+
+```ts
+// 方式一：listRecords 返回的 pagination.total
+const { pagination } = await platform.datasets.listRecords(datasetId);
+console.log(pagination.total); // 568733
+
+// 方式二：countRecords 直接获取
+const { count } = await platform.datasets.countRecords(datasetId);
+```
+
 ## Get one
 
 ```ts

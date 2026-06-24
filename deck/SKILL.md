@@ -241,6 +241,14 @@ Query restrictions (security):
 - Queries run under a read-only database role (`app_reader`) with RLS enforced.
 - Default timeout: 30s (max 60s). Default row limit: 1000 (max 10000).
 
+**重要：COUNT(*) 性能**：`records` 虚拟表对应 PostgreSQL `record` 表，数据量达数十万/百万级时 `COUNT(*)` 会超时。获取记录总数应使用以下任一方式，**禁止**在 SQL 中直接 `SELECT COUNT(*) FROM records`：
+
+- `deck datasets records list <dataset-id> --json` — 只看 `pagination.total` 字段
+- SDK: `platform.datasets.countRecords(datasetId)` — 读取 `dataset.recordCount` 物化列，毫秒级
+- SDK: `platform.datasets.listRecords(datasetId)` — 同样返回 `pagination.total`
+
+`dataset.recordCount` 由数据库触发器自动维护（INSERT/软删/恢复时 ±1），精确且即时。
+
 ### Cross-dataset query (app-level)
 
 ```bash
@@ -345,3 +353,4 @@ When the server returns 4xx/5xx, deck prints `HTTP <status>: <body>` — the bod
 - For large result sets, use `--limit` to control output and `LIMIT`/`OFFSET` in SQL for pagination.
 - For cross-dataset JOIN queries: `deck query --datasets "a=ds1,b=ds2" --sql "SELECT ... FROM a JOIN b ON ..." --json`
 - Use `deck query --datasets "ds1,ds2" --describe` to see columns across multiple datasets before writing a JOIN query.
+- **禁止 `COUNT(*)`**：数据量 > 10 万时 `SELECT COUNT(*) FROM records` 会超时。获取记录总数用 `deck datasets records list <ds> --json | jq '.pagination.total'` 或 SDK 的 `countRecords()`/`listRecords()`，它们读取 `dataset.recordCount` 物化列，毫秒级返回。
