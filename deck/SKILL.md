@@ -54,7 +54,7 @@ deck
 │       ├── create <dataset-id> --schema-version-id <svId> --data '{"field":"value"}'
 │       ├── patch <dataset-id> <record-id> --data '{"field":"newValue"}'
 │       ├── delete <dataset-id> <record-id>
-│       └── import <dataset-id> --file <path>  # 批量导入 JSON 数组或 NDJSON，按 500 条分批
+│       └── import <dataset-id> --file <path>  # batch import JSON array or NDJSON, split into 500-record batches
 ├── config
 │   ├── init
 │   ├── set <key> <value>
@@ -167,46 +167,46 @@ deck datasets records patch <dataset-id> <record-id> --data '{"title":"Updated"}
 
 ### Batch import records
 
-大规模数据同步时使用，跳过工作流通知避免日志风暴。支持 JSON 数组和 NDJSON 两种格式，按 500 条/批自动分割调用 API。
+Use for bulk data sync. Skips workflow notifications to avoid log storms. Supports JSON array and NDJSON formats, auto-split into 500-record batches per API call.
 
 ```bash
-# JSON 数组格式
+# JSON array format
 deck datasets records import <dataset-id> --file records.json
 
-# NDJSON 格式（每行一条 JSON，适合超大文件流式读取）
+# NDJSON format (one JSON per line, ideal for streaming large files)
 deck datasets records import <dataset-id> --file records.ndjson
 
-# 从 stdin 读取
+# Read from stdin
 cat data.json | deck datasets records import <dataset-id> --file @-
 ```
 
-文件格式示例（JSON 数组）：
+File format examples (JSON array):
 
 ```json
 [{ "data": { "title": "Hello", "qty": 3 } }, { "data": { "title": "World", "qty": 5 } }]
 ```
 
-NDJSON 格式：
+NDJSON format:
 
 ```
 {"data": {"title": "Hello", "qty": 3}}
 {"data": {"title": "World", "qty": 5}}
 ```
 
-输出示例：
+Sample output:
 
 ```
 [1/2000] 500/500 inserted (0 errors)
 [2/2000] 998/1000 inserted (2 errors)
-  error at index 3: 字段「title」的值已存在
+  error at index 3: field "title" value already exists
 Done: 998000 inserted, 2000 errors, 1000000 total
 ```
 
-注意：
+Notes:
 
-- 导入期间不触发工作流 webhook / APNs 推送
-- 字段校验与逐条创建相同（必填、类型、唯一性等）
-- 唯一性冲突在批次内和跨批次都会被检测
+- Workflow webhooks and APNs push notifications are skipped during import
+- Field validation is the same as per-record creation (required, type, uniqueness, etc.)
+- Uniqueness conflicts are detected both within and across batches
 
 ### Query records with SQL
 
@@ -240,15 +240,15 @@ deck datasets query <dataset-id> \
 Query restrictions (security):
 
 - Only `SELECT` is allowed — write operations (INSERT/UPDATE/DELETE/DROP etc.) are rejected.
-- CTE 透传 `SELECT * FROM record`，字段通过 `data->>'field_code'` JSONB 语法访问，`(data->>'field')::type` 做类型转换。
+- CTE pass-through `SELECT * FROM record` — access fields via `data->>'field_code'` JSONB syntax, cast with `(data->>'field')::type`.
 - Queries run under a read-only database role (`data_analyst`) with RLS bypassed (CTE enforces per-dataset isolation).
 - Default timeout: 30s (max 60s). Default row limit: 1000 (max 10000).
 
-**重要：获取记录总数现已毫秒级**：`dataset.recordCount` 物化列由触发器自动维护，`countRecords` 和 `listRecords` 直接读取该列，无需全表 COUNT(*)。获取记录总数推荐以下方式：
+**Record count is now millisecond-fast**: `dataset.recordCount` is maintained by triggers. `countRecords()` and `listRecords()` read this column directly, no full-table COUNT(*) needed. Recommended ways to get record count:
 
-- `deck datasets records list <dataset-id> --json` — 查看 `pagination.total` 字段
-- SDK: `platform.datasets.countRecords(datasetId)` — 读取 recordCount 物化列
-- SDK: `platform.datasets.listRecords(datasetId)` — 同样返回 `pagination.total`
+- `deck datasets records list <dataset-id> --json` — check the `pagination.total` field
+- SDK: `platform.datasets.countRecords(datasetId)` — reads the recordCount materialized column
+- SDK: `platform.datasets.listRecords(datasetId)` — also returns `pagination.total`
 
 ### Cross-dataset query (app-level)
 
@@ -306,9 +306,9 @@ Datasets are backed by PostgreSQL. Record data is stored in a JSONB column — e
 
 ## Field Code Naming Convention
 
-`fieldCode` 必须符合 `^[a-z][a-z0-9_]{0,62}$` 格式（小写字母开头，仅含小写字母、数字、下划线，最长 63 字符）。服务端会自动将 `fieldCode` 转为全小写存储，因此 `--code orderId` 实际写入的是 `orderid`。
+`fieldCode` must match the pattern `^[a-z][a-z0-9_]{0,62}$` (starts with lowercase letter, only lowercase letters, digits, underscores, max 63 chars). The server automatically lowercases fieldCode on write, so `--code orderId` actually stores `orderid`.
 
-**建议使用下划线分隔命名**（snake_case），例如 `order_id`、`created_at`，而不是驼峰 `orderId`。因为 `fieldCode` 会直接作为 SQL 查询中的列名，小写下划线风格与 PostgreSQL 原生标识符习惯一致，避免大小写混淆。
+**Use snake_case naming** (e.g. `order_id`, `created_at`) instead of camelCase (`orderId`). Since fieldCode is used directly in SQL queries, lowercase underscore style matches PostgreSQL identifier conventions and avoids case confusion.
 
 ## Field Data Types
 
@@ -354,9 +354,9 @@ When the server returns 4xx/5xx, deck prints `HTTP <status>: <body>` — the bod
 - When creating a field, you need the schema-version-id (not dataset-id) as the positional argument.
 - A dataset can only have one unpublished (draft) schema version at a time.
 - Fields can only be added/updated/deleted on draft schema versions.
-- To run analytics on records: `deck datasets query <ds> --sql "SELECT ..." --json` — field codes become column names; only the `records` virtual table is available.
+- To run analytics on records: `deck datasets query <ds> --sql "SELECT ..." --json` — access fields via `data->>'field_code'` JSONB syntax; only the `records` virtual table is available.
 - Use `--describe` to discover available columns before writing a query: `deck datasets query <ds> --describe --json`
 - For large result sets, use `--limit` to control output and `LIMIT`/`OFFSET` in SQL for pagination.
 - For cross-dataset JOIN queries: `deck query --datasets "a=ds1,b=ds2" --sql "SELECT ... FROM a JOIN b ON ..." --json`
 - Use `deck query --datasets "ds1,ds2" --describe` to see columns across multiple datasets before writing a JOIN query.
-- **获取记录总数推荐用 `recordCount` 物化列**：`dataset.recordCount` 由触发器维护，毫秒级返回。`countRecords()`/`listRecords()` 均读取该列。`SELECT COUNT(*) FROM records` 因 CTE 透传 + NOT MATERIALIZED 也可直接执行，性能已优化。
+- **Get record counts via `recordCount` materialized column**: `dataset.recordCount` is maintained by triggers, returns in milliseconds. `countRecords()`/`listRecords()` both read this column. `SELECT COUNT(*) FROM records` also works efficiently due to pass-through CTE + NOT MATERIALIZED.
