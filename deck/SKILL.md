@@ -211,16 +211,16 @@ Done: 998000 inserted, 2000 errors, 1000000 total
 ### Query records with SQL
 
 ```bash
-# See available columns (field names become SQL column names)
+# See available columns (field names shown in describe output, accessed via data->>'field')
 deck datasets query <dataset-id> --describe
 
-# Aggregate query — field codes are used as column names directly
+# Aggregate query — access fields via data->>'field_code' JSONB syntax
 deck datasets query <dataset-id> \
-    --sql "SELECT status, COUNT(*) AS cnt, SUM(amount) AS total FROM records GROUP BY status ORDER BY total DESC"
+    --sql "SELECT records.data->>'status' AS status, COUNT(*) AS cnt, SUM((records.data->>'amount')::numeric) AS total FROM records GROUP BY records.data->>'status' ORDER BY total DESC"
 
-# System columns: _id, _created_at, _updated_at, _created_by
+# System columns are available directly: id, datasetId, schemaVersionId, data, createdBy, createdAt, updatedAt, updatedBy, deletedAt
 deck datasets query <dataset-id> \
-    --sql "SELECT _created_at, status, amount FROM records WHERE amount > 100 ORDER BY _created_at DESC LIMIT 10"
+    --sql "SELECT id AS _id, createdat, data->>'status' AS status, (data->>'amount')::numeric AS amount FROM records WHERE (data->>'amount')::numeric > 100 ORDER BY createdat DESC LIMIT 10"
 
 # Read SQL from a file
 deck datasets query <dataset-id> --sql @analysis.sql
@@ -233,14 +233,14 @@ deck datasets query <dataset-id> \
 
 # JSON output for scripting
 deck datasets query <dataset-id> \
-    --sql "SELECT status, COUNT(*) AS cnt FROM records GROUP BY status" \
+    --sql "SELECT records.data->>'status' AS status, COUNT(*) AS cnt FROM records GROUP BY records.data->>'status'" \
     --json
 ```
 
 Query restrictions (security):
 
 - Only `SELECT` is allowed — write operations (INSERT/UPDATE/DELETE/DROP etc.) are rejected.
-- Only the `records` virtual table is accessible — no access to other tables or system catalogs.
+- CTE 透传 `SELECT * FROM record`，字段通过 `data->>'field_code'` JSONB 语法访问，`(data->>'field')::type` 做类型转换。
 - Queries run under a read-only database role (`data_analyst`) with RLS bypassed (CTE enforces per-dataset isolation).
 - Default timeout: 30s (max 60s). Default row limit: 1000 (max 10000).
 
@@ -257,28 +257,29 @@ Query restrictions (security):
 deck query --datasets "order-items,spu" --describe
 
 # JOIN across datasets — use alias=code to declare datasets, then use aliases in SQL
+# Fields accessed via data->>'field_code' JSONB syntax
 deck query \
     --datasets "oi=order-items,s=spu" \
-    --sql "SELECT s.bigCat, SUM(oi.sumDealPrice) AS revenue
-           FROM oi JOIN s ON oi.spuCode = s.merchantCode
-           GROUP BY s.bigCat ORDER BY revenue DESC"
+    --sql "SELECT s.data->>'big_cat' AS big_cat, SUM((oi.data->>'sum_deal_price')::numeric) AS revenue
+           FROM oi JOIN s ON oi.data->>'spu_code' = s.data->>'merchant_code'
+           GROUP BY s.data->>'big_cat' ORDER BY revenue DESC"
 
 # Profit analysis
 deck query \
     --datasets "oi=order-items,s=spu" \
-    --sql "SELECT s.bigCat,
-             SUM(oi.sumDealPrice) AS revenue,
-             SUM(oi.amount * s.costPrice) AS cost,
-             SUM(oi.sumDealPrice - oi.amount * s.costPrice) AS profit
-           FROM oi JOIN s ON oi.spuCode = s.merchantCode
-           GROUP BY s.bigCat"
+    --sql "SELECT s.data->>'big_cat' AS big_cat,
+             SUM((oi.data->>'sum_deal_price')::numeric) AS revenue,
+             SUM((oi.data->>'amount')::numeric * (s.data->>'cost_price')::numeric) AS cost,
+             SUM((oi.data->>'sum_deal_price')::numeric - (oi.data->>'amount')::numeric * (s.data->>'cost_price')::numeric) AS profit
+           FROM oi JOIN s ON oi.data->>'spu_code' = s.data->>'merchant_code'
+           GROUP BY s.data->>'big_cat'"
 
 # Slow-moving products
 deck query \
     --datasets "oi=order-items,s=spu" \
-    --sql "SELECT s.merchantCode, s.title
-           FROM s LEFT JOIN oi ON oi.spuCode = s.merchantCode
-           WHERE oi.spuCode IS NULL"
+    --sql "SELECT s.data->>'merchant_code' AS merchant_code, s.data->>'title' AS title
+           FROM s LEFT JOIN oi ON oi.data->>'spu_code' = s.data->>'merchant_code'
+           WHERE oi.data->>'spu_code' IS NULL"
 ```
 
 Cross-dataset query notes:
@@ -358,4 +359,4 @@ When the server returns 4xx/5xx, deck prints `HTTP <status>: <body>` — the bod
 - For large result sets, use `--limit` to control output and `LIMIT`/`OFFSET` in SQL for pagination.
 - For cross-dataset JOIN queries: `deck query --datasets "a=ds1,b=ds2" --sql "SELECT ... FROM a JOIN b ON ..." --json`
 - Use `deck query --datasets "ds1,ds2" --describe` to see columns across multiple datasets before writing a JOIN query.
-- **禁止 `COUNT(*)`**：数据量 > 10 万时 `SELECT COUNT(*) FROM records` 会超时。获取记录总数用 `deck datasets records list <ds> --json | jq '.pagination.total'` 或 SDK 的 `countRecords()`/`listRecords()`，它们读取 `dataset.recordCount` 物化列，毫秒级返回。
+- **获取记录总数推荐用 `recordCount` 物化列**：`dataset.recordCount` 由触发器维护，毫秒级返回。`countRecords()`/`listRecords()` 均读取该列。`SELECT COUNT(*) FROM records` 因 CTE 透传 + NOT MATERIALIZED 也可直接执行，性能已优化。
