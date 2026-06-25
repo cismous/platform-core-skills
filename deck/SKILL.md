@@ -244,10 +244,10 @@ Query restrictions (security):
 - Queries run under a read-only database role (`data_analyst`) with RLS bypassed (CTE enforces per-dataset isolation).
 - Default timeout: 30s (max 60s). Default row limit: 1000 (max 10000).
 
-**重要：COUNT(\*) 现已安全**：`records` 虚拟表对应 PostgreSQL `record` 表，查询使用 `data_analyst` 角色（BYPASSRLS），聚合查询性能已大幅提升。获取记录总数推荐以下方式：
+**重要：获取记录总数现已毫秒级**：`dataset.recordCount` 物化列由触发器自动维护，`countRecords` 和 `listRecords` 直接读取该列，无需全表 COUNT(*)。获取记录总数推荐以下方式：
 
 - `deck datasets records list <dataset-id> --json` — 查看 `pagination.total` 字段
-- SDK: `platform.datasets.countRecords(datasetId)` — 直接 count 查询
+- SDK: `platform.datasets.countRecords(datasetId)` — 读取 recordCount 物化列
 - SDK: `platform.datasets.listRecords(datasetId)` — 同样返回 `pagination.total`
 
 ### Cross-dataset query (app-level)
