@@ -210,17 +210,47 @@ Notes:
 
 ### Query records with SQL
 
+**Important: Field access pattern**
+
+All custom fields are stored in the `data` JSONB column. Field codes are NOT expanded as standalone columns. You MUST use JSONB operators:
+
+```sql
+-- ❌ WRONG: field codes are not column names
+SELECT spu_code, amount FROM records
+
+-- ✅ CORRECT: access via data->>'field_code'
+SELECT data->>'spu_code' AS spu_code, (data->>'amount')::numeric AS amount FROM records
+```
+
+**Why?** The underlying CTE is `SELECT * FROM "record"`. The `record` table has only `data` (JSONB) + system columns (`id`, `createdAt`, etc.). Field codes are never expanded into standalone columns.
+
+**Type casting**
+
+| Field type | Access pattern             | Aggregation / comparison            |
+| ---------- | -------------------------- | ----------------------------------- |
+| string     | `data->>'field_code'`      | Use directly                        |
+| number     | `(data->>'field_code')::numeric` | **Must cast** or treated as string |
+| boolean    | `(data->>'field_code')::boolean` | **Must cast**                  |
+
+**System columns** (available directly, no JSONB access needed):
+
+`id`, `datasetId`, `schemaVersionId`, `data`, `createdBy`, `createdAt`, `updatedAt`, `updatedBy`, `deletedAt`
+
 ```bash
-# See available columns with JSONB access paths (e.g. data->>'field')
-deck datasets query <dataset-id> --describe
+# See available columns with JSONB access paths
+deck datasets query <dataset-id> --describe --json
 
-# Aggregate query — access fields via data->>'field_code' JSONB syntax
+# Single-dataset aggregation
 deck datasets query <dataset-id> \
-    --sql "SELECT records.data->>'status' AS status, COUNT(*) AS cnt, SUM((records.data->>'amount')::numeric) AS total FROM records GROUP BY records.data->>'status' ORDER BY total DESC"
-
-# System columns are available directly: id, datasetId, schemaVersionId, data, createdBy, createdAt, updatedAt, updatedBy, deletedAt
-deck datasets query <dataset-id> \
-    --sql "SELECT id AS _id, createdat, data->>'status' AS status, (data->>'amount')::numeric AS amount FROM records WHERE (data->>'amount')::numeric > 100 ORDER BY createdat DESC LIMIT 10"
+    --sql "
+      SELECT data->>'spu_code' AS spu_code,
+             SUM((data->>'amount')::numeric) AS total_qty,
+             SUM((data->>'sum_deal_price')::numeric) AS total_revenue
+      FROM records
+      GROUP BY data->>'spu_code'
+      ORDER BY total_qty DESC
+      LIMIT 10" \
+    --json
 
 # Read SQL from a file
 deck datasets query <dataset-id> --sql @analysis.sql
@@ -230,17 +260,11 @@ deck datasets query <dataset-id> \
     --sql "SELECT * FROM records" \
     --limit 5000 \
     --timeout 20
-
-# JSON output for scripting
-deck datasets query <dataset-id> \
-    --sql "SELECT records.data->>'status' AS status, COUNT(*) AS cnt FROM records GROUP BY records.data->>'status'" \
-    --json
 ```
 
 Query restrictions (security):
 
 - Only `SELECT` is allowed — write operations (INSERT/UPDATE/DELETE/DROP etc.) are rejected.
-- CTE pass-through `SELECT * FROM record` — access fields via `data->>'field_code'` JSONB syntax, cast with `(data->>'field')::type`.
 - Queries run under a read-only database role (`data_analyst`) with RLS bypassed (CTE enforces per-dataset isolation).
 - Default timeout: 30s (max 60s). Default row limit: 1000 (max 10000).
 
@@ -257,35 +281,35 @@ Query restrictions (security):
 deck query --datasets "order-items,spu" --describe
 
 # JOIN across datasets — use alias=code to declare datasets, then use aliases in SQL
-# Fields accessed via data->>'field_code' JSONB syntax
+# Fields in JOIN conditions and SELECT must use alias.data->>'field_code' format
 deck query \
     --datasets "oi=order-items,s=spu" \
-    --sql "SELECT s.data->>'big_cat' AS big_cat, SUM((oi.data->>'sum_deal_price')::numeric) AS revenue
-           FROM oi JOIN s ON oi.data->>'spu_code' = s.data->>'merchant_code'
-           GROUP BY s.data->>'big_cat' ORDER BY revenue DESC"
-
-# Profit analysis
-deck query \
-    --datasets "oi=order-items,s=spu" \
-    --sql "SELECT s.data->>'big_cat' AS big_cat,
-             SUM((oi.data->>'sum_deal_price')::numeric) AS revenue,
-             SUM((oi.data->>'amount')::numeric * (s.data->>'cost_price')::numeric) AS cost,
-             SUM((oi.data->>'sum_deal_price')::numeric - (oi.data->>'amount')::numeric * (s.data->>'cost_price')::numeric) AS profit
-           FROM oi JOIN s ON oi.data->>'spu_code' = s.data->>'merchant_code'
-           GROUP BY s.data->>'big_cat'"
+    --sql "
+      SELECT s.data->>'title' AS title,
+             SUM((oi.data->>'amount')::numeric) AS sales_qty,
+             SUM((oi.data->>'sum_deal_price')::numeric) AS revenue
+      FROM oi JOIN s ON oi.data->>'spu_code' = s.data->>'merchant_code'
+      GROUP BY s.data->>'title'
+      ORDER BY sales_qty DESC
+      LIMIT 10" \
+    --json
 
 # Slow-moving products
 deck query \
     --datasets "oi=order-items,s=spu" \
-    --sql "SELECT s.data->>'merchant_code' AS merchant_code, s.data->>'title' AS title
-           FROM s LEFT JOIN oi ON oi.data->>'spu_code' = s.data->>'merchant_code'
-           WHERE oi.data->>'spu_code' IS NULL"
+    --sql "
+      SELECT s.data->>'merchant_code' AS merchant_code,
+             s.data->>'title' AS title
+      FROM s LEFT JOIN oi ON oi.data->>'spu_code' = s.data->>'merchant_code'
+      WHERE oi.data->>'spu_code' IS NULL" \
+    --json
 ```
 
 Cross-dataset query notes:
 
 - Uses `--datasets "alias=code,alias=code"` to declare datasets and their SQL aliases.
 - Up to 5 datasets per query. All must belong to the same app (resolved via `--app`).
+- Number fields in JOIN conditions and aggregations **must** be cast with `::numeric`.
 - Same security restrictions as single-dataset query (read-only, RLS, timeout).
 
 ### Switch environments
@@ -347,6 +371,7 @@ When the server returns 4xx/5xx, deck prints `HTTP <status>: <body>` — the bod
 
 ## Tips for AI Usage
 
+- **CRITICAL: All custom fields are in `data` JSONB — use `data->>'field_code'` (string) or `(data->>'field_code')::numeric` (number), NEVER use field codes as bare column names.**
 - Always use `--json` when you need to parse output programmatically or pipe to `jq`.
 - To check if a field exists: `deck datasets fields list <ds> --json | jq '.[] | select(.fieldCode == "<code>")'`
 - To get the published schema version id: `deck datasets schema-versions list <ds> --json | jq '.[] | select(.status == "published") | .id'`
