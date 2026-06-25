@@ -10,10 +10,10 @@ How to model your data on top of platform datasets when shape and size vary. Ref
 
 Before picking a model, internalize three current limits of `@platform/api`:
 
-| Limit | Implication |
-|---|---|
-| `listRecords` has **no `where` filter** | Cannot fetch "records where field X == Y" efficiently |
-| `listRecords` has **no field projection** | All `data` keys returned, including large json blobs |
+| Limit                                     | Implication                                           |
+| ----------------------------------------- | ----------------------------------------------------- |
+| `listRecords` has **no `where` filter**   | Cannot fetch "records where field X == Y" efficiently |
+| `listRecords` has **no field projection** | All `data` keys returned, including large json blobs  |
 
 If your data model needs server-side filtering, you must either (a) split into smaller datasets or (b) extend `@platform/api` — not within this skill's scope.
 
@@ -36,15 +36,15 @@ dataset:  <entity-plural>
 
 **Schema cheat sheet:**
 
-| Concern | Field type |
-|---|---|
-| Display name in lists | `text` / `text_single` |
-| Long preview snippet | `long_text` / `textarea` |
-| Counts (messages, attachments) | `int` / `number_input` |
-| Sort key (last activity) | `datetime` / `datetime_picker` |
-| Archive / soft state | `boolean` / `switch` |
-| The variable payload | `json` / `json_editor` |
-| Enum-like tags | `text` + index in app code (no server enum constraint) |
+| Concern                        | Field type                                             |
+| ------------------------------ | ------------------------------------------------------ |
+| Display name in lists          | `text` / `text_single`                                 |
+| Long preview snippet           | `long_text` / `textarea`                               |
+| Counts (messages, attachments) | `int` / `number_input`                                 |
+| Sort key (last activity)       | `datetime` / `datetime_picker`                         |
+| Archive / soft state           | `boolean` / `switch`                                   |
+| The variable payload           | `json` / `json_editor`                                 |
+| Enum-like tags                 | `text` + index in app code (no server enum constraint) |
 
 **Reference implementation:** [examples/ai-chat-conversations.ts](../examples/ai-chat-conversations.ts).
 

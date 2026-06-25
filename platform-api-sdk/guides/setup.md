@@ -35,7 +35,7 @@ await platform.datasets.listRecords(datasetId);
 - Each call to `createPlatformWithApiKey` returns an independent client — you can hold multiple keys side-by-side
 - Returned `platform` has the same shape as the layer-1 singleton
 
-If you need both keys *and* customized endpoints, drop to layer 3.
+If you need both keys _and_ customized endpoints, drop to layer 3.
 
 ## Layer 3: low-level builder
 
@@ -93,9 +93,7 @@ import {
   buildAuthApiClientConfig,
 } from "@platform/api-sdk";
 
-const authClient = createApiClient(
-  buildAuthApiClientConfig({ baseUrl: "http://localhost:1006" }),
-);
+const authClient = createApiClient(buildAuthApiClientConfig({ baseUrl: "http://localhost:1006" }));
 const auth = createAuthSessionApi(authClient);
 const authApiKey = createAuthApiKeyApi(authClient);
 ```

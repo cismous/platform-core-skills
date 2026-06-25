@@ -16,6 +16,7 @@ allowed-tools: Bash(deck *)
 - App must be resolvable via one of: `--app <code|id>` flag, `$DECK_APP` env var, or `deck.yml` in the working directory
 
 Check current state:
+
 ```bash
 deck config show        # see all contexts + active one
 deck auth status        # verify key is stored and API accepts it
@@ -78,14 +79,14 @@ deck
 
 ## Global Flags
 
-| Flag | Description |
-|------|-------------|
+| Flag                     | Description                                                     |
+| ------------------------ | --------------------------------------------------------------- |
 | `--app <code\|id>`, `-a` | Override app (takes precedence over `$DECK_APP` and `deck.yml`) |
-| `--context <name>` | Override the active context for this command |
-| `--config <path>` | Override config file path |
-| `--json` | Output as JSON (for scripting / piping to `jq`) |
-| `--no-border` | Render table without box border (kubectl-style) |
-| `--version`, `-v` | Print version, commit, build date (deck root only) |
+| `--context <name>`       | Override the active context for this command                    |
+| `--config <path>`        | Override config file path                                       |
+| `--json`                 | Output as JSON (for scripting / piping to `jq`)                 |
+| `--no-border`            | Render table without box border (kubectl-style)                 |
+| `--version`, `-v`        | Print version, commit, build date (deck root only)              |
 
 ## Typical Workflows
 
@@ -180,20 +181,20 @@ cat data.json | deck datasets records import <dataset-id> --file @-
 ```
 
 文件格式示例（JSON 数组）：
+
 ```json
-[
-  {"data": {"title": "Hello", "qty": 3}},
-  {"data": {"title": "World", "qty": 5}}
-]
+[{ "data": { "title": "Hello", "qty": 3 } }, { "data": { "title": "World", "qty": 5 } }]
 ```
 
 NDJSON 格式：
+
 ```
 {"data": {"title": "Hello", "qty": 3}}
 {"data": {"title": "World", "qty": 5}}
 ```
 
 输出示例：
+
 ```
 [1/2000] 500/500 inserted (0 errors)
 [2/2000] 998/1000 inserted (2 errors)
@@ -202,6 +203,7 @@ Done: 998000 inserted, 2000 errors, 1000000 total
 ```
 
 注意：
+
 - 导入期间不触发工作流 webhook / APNs 推送
 - 字段校验与逐条创建相同（必填、类型、唯一性等）
 - 唯一性冲突在批次内和跨批次都会被检测
@@ -236,18 +238,17 @@ deck datasets query <dataset-id> \
 ```
 
 Query restrictions (security):
+
 - Only `SELECT` is allowed — write operations (INSERT/UPDATE/DELETE/DROP etc.) are rejected.
 - Only the `records` virtual table is accessible — no access to other tables or system catalogs.
-- Queries run under a read-only database role (`app_reader`) with RLS enforced.
+- Queries run under a read-only database role (`data_analyst`) with RLS bypassed (CTE enforces per-dataset isolation).
 - Default timeout: 30s (max 60s). Default row limit: 1000 (max 10000).
 
-**重要：COUNT(*) 性能**：`records` 虚拟表对应 PostgreSQL `record` 表，数据量达数十万/百万级时 `COUNT(*)` 会超时。获取记录总数应使用以下任一方式，**禁止**在 SQL 中直接 `SELECT COUNT(*) FROM records`：
+**重要：COUNT(\*) 现已安全**：`records` 虚拟表对应 PostgreSQL `record` 表，查询使用 `data_analyst` 角色（BYPASSRLS），聚合查询性能已大幅提升。获取记录总数推荐以下方式：
 
-- `deck datasets records list <dataset-id> --json` — 只看 `pagination.total` 字段
-- SDK: `platform.datasets.countRecords(datasetId)` — 读取 `dataset.recordCount` 物化列，毫秒级
+- `deck datasets records list <dataset-id> --json` — 查看 `pagination.total` 字段
+- SDK: `platform.datasets.countRecords(datasetId)` — 直接 count 查询
 - SDK: `platform.datasets.listRecords(datasetId)` — 同样返回 `pagination.total`
-
-`dataset.recordCount` 由数据库触发器自动维护（INSERT/软删/恢复时 ±1），精确且即时。
 
 ### Cross-dataset query (app-level)
 
@@ -281,6 +282,7 @@ deck query \
 ```
 
 Cross-dataset query notes:
+
 - Uses `--datasets "alias=code,alias=code"` to declare datasets and their SQL aliases.
 - Up to 5 datasets per query. All must belong to the same app (resolved via `--app`).
 - Same security restrictions as single-dataset query (read-only, RLS, timeout).
@@ -316,6 +318,7 @@ The `--label` flag sets the field's display name (stored in `meta.fieldLabel`). 
 ## Data Input
 
 The `--data` and `--constraints` flags support three input forms:
+
 - Inline JSON: `--data '{"key":"value"}'`
 - File: `--data @./payload.json`
 - Stdin: `--data @-`
@@ -323,6 +326,7 @@ The `--data` and `--constraints` flags support three input forms:
 ## App Resolution Order
 
 Commands that need an app resolve it in this order:
+
 1. `--app` flag (code or UUID)
 2. `$DECK_APP` environment variable
 3. `deck.yml` file in working directory or parents (`app:` field)
@@ -331,6 +335,7 @@ Commands that need an app resolve it in this order:
 ## Tenant Resolution Order
 
 Commands that need a tenant (organization) resolve it in this order:
+
 1. `--tenant-id` flag
 2. `deck.yml` file (`tenant:` field)
 3. Context config (`deck config set tenant <orgId>`)

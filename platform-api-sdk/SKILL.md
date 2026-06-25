@@ -8,10 +8,10 @@ user-invocable: false
 
 A typed JSON client for the platform backend. Three ingress paths:
 
-| Prefix | Mounted by | What it serves |
-|---|---|---|
-| `/api/platform` | `@platform/api` (Hono + zod-openapi) | apps · datasets · records · fields · schema versions · members · notification channels · workflow rules · user devices |
-| `/api/auth` | `@platform/auth-server` (Better Auth) | sessions · organizations · members · API keys |
+| Prefix          | Mounted by                            | What it serves                                                                                                         |
+| --------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `/api/platform` | `@platform/api` (Hono + zod-openapi)  | apps · datasets · records · fields · schema versions · members · notification channels · workflow rules · user devices |
+| `/api/auth`     | `@platform/auth-server` (Better Auth) | sessions · organizations · members · API keys                                                                          |
 
 The SDK is **transport-only** — no caching, no retry, no auth state. Bring your own state container (React context, Zustand, etc).
 
@@ -42,11 +42,11 @@ Peer requirement: a runtime with global `fetch` and `Headers` (Bun, Node ≥ 18,
 
 The SDK ships **three layers**. 99% of consumers want layer 1.
 
-| Layer | Import | When |
-|---|---|---|
-| **1. Default singleton** | `import { platform } from "@platform/api-sdk"` | Production, browser cookie session, zero config |
-| **2. API-key factory** | `import { createPlatformWithApiKey } from "@platform/api-sdk"` | Production, server-to-server / CLI |
-| **3. Low-level builder** | `createApiClient` + `buildPlatformApiClientConfig` | Local dev (localhost), self-hosted (different domain), custom transport |
+| Layer                    | Import                                                         | When                                                                    |
+| ------------------------ | -------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| **1. Default singleton** | `import { platform } from "@platform/api-sdk"`                 | Production, browser cookie session, zero config                         |
+| **2. API-key factory**   | `import { createPlatformWithApiKey } from "@platform/api-sdk"` | Production, server-to-server / CLI                                      |
+| **3. Low-level builder** | `createApiClient` + `buildPlatformApiClientConfig`             | Local dev (localhost), self-hosted (different domain), custom transport |
 
 Endpoints in layers 1 & 2 are fixed to production ingress (same constants as `console-web` Dockerfile):
 
@@ -68,7 +68,10 @@ The client automatically fails over to backup if all primaries return errors.
 import { platform, PlatformApiError } from "@platform/api-sdk";
 
 // 业务数据类型（可选，用于类型化 data 字段）
-interface OrderData { title: string; qty: number; }
+interface OrderData {
+  title: string;
+  qty: number;
+}
 
 // CRUD records on a dataset. datasetId / svId resolved out-of-band
 // (e.g. listApps → listDatasets → listSchemaVersions, then cached).
@@ -121,9 +124,7 @@ import {
 } from "@platform/api-sdk";
 
 // Local dev pointing at http://localhost:1005
-const client = createApiClient(
-  buildPlatformApiClientConfig({ baseUrl: "http://localhost:1005" }),
-);
+const client = createApiClient(buildPlatformApiClientConfig({ baseUrl: "http://localhost:1005" }));
 const platform = createPlatformResourceApi(client);
 ```
 
@@ -164,21 +165,21 @@ The resource API (`platform.orgs / .apps / .datasets / .userDevices`) mirrors th
 
 ## Guides
 
-| File | When to read |
-|---|---|
-| [guides/setup.md](./guides/setup.md) | Choosing layer 1/2/3; resilient DDNS config; lifecycle / `destroy()` |
-| [guides/auth.md](./guides/auth.md) | Session cookie vs. API key trade-offs; managing keys with `createAuthApiKeyApi` |
-| [guides/records-crud.md](./guides/records-crud.md) | `datasets.{list,get,create,patch,delete}Record` — payload shape, common 4xx pitfalls |
-| [guides/schema.md](./guides/schema.md) | Schema versions lifecycle (draft → pending → published), field CRUD, diff & publish with migration plan |
+| File                                                       | When to read                                                                                                                                         |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [guides/setup.md](./guides/setup.md)                       | Choosing layer 1/2/3; resilient DDNS config; lifecycle / `destroy()`                                                                                 |
+| [guides/auth.md](./guides/auth.md)                         | Session cookie vs. API key trade-offs; managing keys with `createAuthApiKeyApi`                                                                      |
+| [guides/records-crud.md](./guides/records-crud.md)         | `datasets.{list,get,create,patch,delete}Record` — payload shape, common 4xx pitfalls                                                                 |
+| [guides/schema.md](./guides/schema.md)                     | Schema versions lifecycle (draft → pending → published), field CRUD, diff & publish with migration plan                                              |
 | [guides/storage-patterns.md](./guides/storage-patterns.md) | How to model variable-shape data on datasets — single record, metadata + body, time-bucketed, external storage. Read before designing a new dataset. |
-| [guides/errors.md](./guides/errors.md) | `PlatformApiError` fields; retry / 401 / 403 / 404 / 422 handling patterns |
+| [guides/errors.md](./guides/errors.md)                     | `PlatformApiError` fields; retry / 401 / 403 / 404 / 422 handling patterns                                                                           |
 
 ## Examples
 
-| File | Stack |
-|---|---|
-| [examples/node-cli-crud.ts](./examples/node-cli-crud.ts) | Bun / Node — full CRUD round-trip with `createPlatformWithApiKey` |
-| [examples/react-records-hook.tsx](./examples/react-records-hook.tsx) | React — `useEffect` consuming default `platform` + `PlatformApiError` handling |
+| File                                                                     | Stack                                                                                                                                                 |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [examples/node-cli-crud.ts](./examples/node-cli-crud.ts)                 | Bun / Node — full CRUD round-trip with `createPlatformWithApiKey`                                                                                     |
+| [examples/react-records-hook.tsx](./examples/react-records-hook.tsx)     | React — `useEffect` consuming default `platform` + `PlatformApiError` handling                                                                        |
 | [examples/ai-chat-conversations.ts](./examples/ai-chat-conversations.ts) | Real-world Pattern 1 case — AI chat conversations stored as one record each with messages in a json field (create / append / list / archive / delete) |
 
 ## Critical rules
@@ -188,4 +189,4 @@ The resource API (`platform.orgs / .apps / .datasets / .userDevices`) mirrors th
 3. **`PlatformApiError.status` is the canonical signal.** Don't `try { ... } catch { return null }` blindly — at minimum distinguish 401/403 (auth) from 404 (missing) from 5xx (retry-worthy).
 4. **Resource methods don't accept per-request `init`.** Auth is configured on the client, not on the call. If you need a different auth/header per call, build a separate client (see `createPlatformWithApiKey` for the canonical pattern).
 5. **`destroyDefaultClients()` is rarely needed.** Default clients hold no timers until a primary fails; call only when intentionally tearing down (hot reload, test cleanup).
-6. **获取记录总数用 `countRecords()` 或 `listRecords()` 的 `pagination.total`**，不要用 `deck query` 执行 `SELECT COUNT(*) FROM records`。这些 API 读取 `dataset.recordCount` 物化列（触发器自动维护），毫秒级返回；`COUNT(*)` 在百万级数据上会超时。
+6. **获取记录总数用 `countRecords()` 或 `listRecords()` 的 `pagination.total`**。查询使用 `data_analyst` 角色（BYPASSRLS），聚合查询性能已大幅提升。

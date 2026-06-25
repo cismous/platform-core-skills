@@ -21,8 +21,8 @@ interface OrderData {
 }
 
 const { items } = await platform.datasets.listRecords<OrderData>(datasetId);
-items[0].data.title;  // ✅ string
-items[0].data.qty;    // ✅ number
+items[0].data.title; // ✅ string
+items[0].data.qty; // ✅ number
 ```
 
 不传泛型时 `data` 默认为 `Record<string, unknown>`，和之前完全兼容。
@@ -34,7 +34,7 @@ type PlatformRecord<T = Record<string, unknown>> = {
   id: string;
   datasetId?: string;
   schemaVersionId?: string;
-  data: T;                            // <-- 泛型化，默认 Record<string, unknown>
+  data: T; // <-- 泛型化，默认 Record<string, unknown>
   createdBy?: string | null;
   createdAt?: string;
   updatedBy?: string | null;
@@ -46,7 +46,7 @@ The platform **does** paginate `listRecords` — pass `{ page, pageSize }` and r
 
 ### 获取记录总数
 
-`listRecords` 返回的 `pagination.total` 和 `countRecords` 接口均读取 `dataset.recordCount` 物化列（INSERT/软删/恢复时由触发器自动 ±1），毫秒级返回。**不要**用 `deck query` 执行 `SELECT COUNT(*) FROM records`，百万级数据会超时。
+`listRecords` 返回的 `pagination.total` 和 `countRecords` 接口直接执行 `count(*)` 查询。查询使用 `data_analyst` 角色（BYPASSRLS），性能已大幅提升。
 
 ```ts
 // 方式一：listRecords 返回的 pagination.total
@@ -87,7 +87,7 @@ const record = await platform.datasets.createRecord(datasetId, {
 
 ```ts
 await platform.datasets.patchRecord(datasetId, recordId, {
-  data: { qty: 4 },                     // partial — merges into existing data
+  data: { qty: 4 }, // partial — merges into existing data
 });
 ```
 
@@ -109,10 +109,7 @@ Soft-delete on the server (history retained). Re-creating with the same logical 
 
 ```ts
 const { inserted, errors, total } = await platform.datasets.batchImportRecords(datasetId, {
-  records: [
-    { data: { title: "Item 1", qty: 10 } },
-    { data: { title: "Item 2", qty: 20 } },
-  ],
+  records: [{ data: { title: "Item 1", qty: 10 } }, { data: { title: "Item 2", qty: 20 } }],
 });
 // inserted: number — 成功插入条数
 // errors: { index: number; error: string }[] — 失败记录及原因
@@ -135,33 +132,25 @@ const snapshots = await platform.datasets.listRecordHistory(datasetId, recordId)
 Option fields (single/multi select, dataset refs) need their option list resolved. The server returns the right shape per field type:
 
 ```ts
-const opts = await platform.datasets.getFieldFormOptions(
-  datasetId,
-  schemaVersionId,
-  fieldCode,
-);
+const opts = await platform.datasets.getFieldFormOptions(datasetId, schemaVersionId, fieldCode);
 ```
 
 Returned `FieldOptionsResponse` contains `sourceKind` and `options`:
 
 ```ts
-const opts = await platform.datasets.getFieldFormOptions(
-  datasetId,
-  schemaVersionId,
-  fieldCode,
-);
+const opts = await platform.datasets.getFieldFormOptions(datasetId, schemaVersionId, fieldCode);
 // opts.sourceKind: "static" | "dataset_ref"
 // opts.options: { value: string; label: string; disabled?: boolean }[]
 ```
 
 ## Common 4xx pitfalls
 
-| Status | Likely cause | Fix |
-|---|---|---|
-| 400 | bad UUID format or malformed JSON | check payload shape |
-| 401 | no session cookie & no `x-api-key` | see [guides/auth.md](./auth.md) |
-| 403 | RLS rejection (not a member, or write-policy violated) | confirm `app.recordWritePolicy` + dataset RLS |
-| 404 | wrong `datasetId` OR record not visible under RLS | resolve dataset via `apps.listDatasets` first |
-| 422 | `data` has unknown field codes, type mismatch, or required field missing | diff against current schema with `listFields(datasetId, schemaVersionId)` |
+| Status | Likely cause                                                             | Fix                                                                       |
+| ------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| 400    | bad UUID format or malformed JSON                                        | check payload shape                                                       |
+| 401    | no session cookie & no `x-api-key`                                       | see [guides/auth.md](./auth.md)                                           |
+| 403    | RLS rejection (not a member, or write-policy violated)                   | confirm `app.recordWritePolicy` + dataset RLS                             |
+| 404    | wrong `datasetId` OR record not visible under RLS                        | resolve dataset via `apps.listDatasets` first                             |
+| 422    | `data` has unknown field codes, type mismatch, or required field missing | diff against current schema with `listFields(datasetId, schemaVersionId)` |
 
 See [guides/errors.md](./errors.md) for the catch pattern.

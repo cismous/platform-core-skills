@@ -83,21 +83,17 @@ await platform.datasets.submitSchemaVersion(datasetId, draftVersionId);
 
 // 2. Diff against current published — decide what migration plan you need
 const diff = await platform.datasets.getSchemaDiff(datasetId, {
-  from: publishedVersionId,    // optional; defaults to current published
+  from: publishedVersionId, // optional; defaults to current published
   to: draftVersionId,
   renames: { old_code: "new_code" }, // optional: tell server how to map renamed fields
 });
 // diff.requiredWithoutDefault lists fields that MUST have a default in the migration plan
 
 // 3. Publish (kicks off a background migration batch for all existing records)
-const { dataset, migrationBatchId } = await platform.datasets.publish(
-  datasetId,
-  draftVersionId,
-  {
-    defaults: { priority: 1 },             // value for new required fields
-    renames: { old_code: "new_code" },     // same renames as the diff call
-  },
-);
+const { dataset, migrationBatchId } = await platform.datasets.publish(datasetId, draftVersionId, {
+  defaults: { priority: 1 }, // value for new required fields
+  renames: { old_code: "new_code" }, // same renames as the diff call
+});
 ```
 
 If `migrationBatchId` is null, no existing records needed migration.
@@ -122,8 +118,8 @@ Not schema-related but lives on `datasets`:
 
 ```ts
 await platform.datasets.patch(datasetId, {
-  isPublicRead: true,                       // anonymous read access
-  recordWritePolicy: "creator_own",         // override app-level policy; null = inherit
+  isPublicRead: true, // anonymous read access
+  recordWritePolicy: "creator_own", // override app-level policy; null = inherit
   meta: { title: "订单数据", description: "订单下拉引用的主数据" },
 });
 ```
@@ -137,7 +133,9 @@ const rule = await platform.datasets.createWorkflowRule(datasetId, {
   name: "notify-on-new-order",
   trigger: "record.created",
   enabled: true,
-  conditionJson: { /* ... */ },
+  conditionJson: {
+    /* ... */
+  },
   templateBody: "New order: {{ data.title }}",
   templateContentType: "text/plain",
   channelIds: [channelId],
@@ -151,9 +149,9 @@ Notification channels themselves live under `platform.apps.{listNotificationChan
 
 ## Common mistakes
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| 422 on `publish` | required new fields lack a default in the migration plan | use `getSchemaDiff` first, fill `defaults` for everything in `requiredWithoutDefault` |
-| 409 on `submitSchemaVersion` | version is already `published` or `pending_publish` | clone a fresh draft |
-| Records visible to old schema but missing new fields | publish happened but the migration batch is still `pending`/`running` | poll `getMigrationBatch` |
-| Renamed field appears as both old + new in records | forgot `renames` in the publish call | re-publish (or re-run migration) with `renames` supplied |
+| Symptom                                              | Cause                                                                 | Fix                                                                                   |
+| ---------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| 422 on `publish`                                     | required new fields lack a default in the migration plan              | use `getSchemaDiff` first, fill `defaults` for everything in `requiredWithoutDefault` |
+| 409 on `submitSchemaVersion`                         | version is already `published` or `pending_publish`                   | clone a fresh draft                                                                   |
+| Records visible to old schema but missing new fields | publish happened but the migration batch is still `pending`/`running` | poll `getMigrationBatch`                                                              |
+| Renamed field appears as both old + new in records   | forgot `renames` in the publish call                                  | re-publish (or re-run migration) with `renames` supplied                              |

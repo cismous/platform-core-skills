@@ -2,10 +2,10 @@
 
 Two modes, one rule: **never mix them in the same request**.
 
-| Mode | When | Header | `credentials` | SDK entry |
-|---|---|---|---|---|
-| Session cookie | Browser SPA logged in via Better Auth | (cookie automatic) | `"include"` | `platform` singleton |
-| API key | Server-to-server, CLI, headless | `x-api-key: <key>` | `"omit"` | `createPlatformWithApiKey(key)` |
+| Mode           | When                                  | Header             | `credentials` | SDK entry                       |
+| -------------- | ------------------------------------- | ------------------ | ------------- | ------------------------------- |
+| Session cookie | Browser SPA logged in via Better Auth | (cookie automatic) | `"include"`   | `platform` singleton            |
+| API key        | Server-to-server, CLI, headless       | `x-api-key: <key>` | `"omit"`      | `createPlatformWithApiKey(key)` |
 
 ## Mode 1: session cookie
 
@@ -19,7 +19,9 @@ const { items } = await platform.datasets.listRecords(datasetId);
 
 // Reading the current session
 const session = await auth.getAuthSession(); // null if not logged in
-if (session?.user?.id) { /* logged in */ }
+if (session?.user?.id) {
+  /* logged in */
+}
 ```
 
 CORS: the platform API must allow the consumer origin (`CORS_ORIGINS` env on the server). Cookies require `Access-Control-Allow-Credentials: true` + a concrete origin, not `*` — handled server-side already.
@@ -75,9 +77,19 @@ import {
 
 function withDefaultHeaders(raw: ApiClient, headers: HeadersInit): ApiClient {
   return {
-    get baseUrl() { return raw.baseUrl; },
-    fetchJson: (path, init) => raw.fetchJson(path, { ...init, headers: { ...headers, ...(init?.headers as Record<string, string>) } }),
-    fetchVoid: (path, init) => raw.fetchVoid(path, { ...init, headers: { ...headers, ...(init?.headers as Record<string, string>) } }),
+    get baseUrl() {
+      return raw.baseUrl;
+    },
+    fetchJson: (path, init) =>
+      raw.fetchJson(path, {
+        ...init,
+        headers: { ...headers, ...(init?.headers as Record<string, string>) },
+      }),
+    fetchVoid: (path, init) =>
+      raw.fetchVoid(path, {
+        ...init,
+        headers: { ...headers, ...(init?.headers as Record<string, string>) },
+      }),
     destroy: () => raw.destroy(),
   };
 }
@@ -108,9 +120,9 @@ console.log("DB record:", response););
 
 ## Common mistakes
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| `401 unauthorized` from API key | sent both cookie and `x-api-key` | use `createPlatformWithApiKey` (forces `omit`) |
-| `CORS error` on first call | server `CORS_ORIGINS` missing your origin | add the consumer origin to `CORS_ORIGINS` env in `@platform/api` / `@platform/auth-server` |
-| `Random 403 on writes` | session cookie present but user has no RLS access to that dataset | check `app.recordWritePolicy` + dataset RLS — not a client bug |
-| API key works locally but not in prod | layer-1/2 endpoints are hard-coded to production ingress; localhost won't reach them | use layer 3 for non-production |
+| Symptom                               | Cause                                                                                | Fix                                                                                        |
+| ------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `401 unauthorized` from API key       | sent both cookie and `x-api-key`                                                     | use `createPlatformWithApiKey` (forces `omit`)                                             |
+| `CORS error` on first call            | server `CORS_ORIGINS` missing your origin                                            | add the consumer origin to `CORS_ORIGINS` env in `@platform/api` / `@platform/auth-server` |
+| `Random 403 on writes`                | session cookie present but user has no RLS access to that dataset                    | check `app.recordWritePolicy` + dataset RLS — not a client bug                             |
+| API key works locally but not in prod | layer-1/2 endpoints are hard-coded to production ingress; localhost won't reach them | use layer 3 for non-production                                                             |

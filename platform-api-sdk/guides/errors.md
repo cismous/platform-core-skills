@@ -4,9 +4,9 @@ All non-2xx responses (and JSON parse failures) throw `PlatformApiError`. It car
 
 ```ts
 class PlatformApiError extends Error {
-  readonly status: number;     // HTTP status
-  readonly bodyText: string;   // raw response body (may be JSON string or plain text)
-  readonly url: string;        // full URL that failed
+  readonly status: number; // HTTP status
+  readonly bodyText: string; // raw response body (may be JSON string or plain text)
+  readonly url: string; // full URL that failed
 }
 ```
 
@@ -20,10 +20,18 @@ try {
   return record;
 } catch (e) {
   if (e instanceof PlatformApiError) {
-    if (e.status === 404) return null;             // not found — caller decides
-    if (e.status === 401) { redirectToLogin(); return null; }
-    if (e.status === 403) { showPermissionToast(); return null; }
-    if (e.status >= 500) { /* retryable */ }
+    if (e.status === 404) return null; // not found — caller decides
+    if (e.status === 401) {
+      redirectToLogin();
+      return null;
+    }
+    if (e.status === 403) {
+      showPermissionToast();
+      return null;
+    }
+    if (e.status >= 500) {
+      /* retryable */
+    }
     // Parse server error body when available:
     const body = safeJson(e.bodyText);
     showError(body?.error ?? `HTTP ${e.status}`);
@@ -33,22 +41,26 @@ try {
 }
 
 function safeJson(text: string): { error?: string } | null {
-  try { return JSON.parse(text); } catch { return null; }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
 ```
 
 ## Status guide
 
-| Status | Meaning | Action |
-|---|---|---|
-| 400 | bad request shape | check payload — likely a missing field or wrong UUID |
-| 401 | no/invalid auth | refresh session / re-acquire API key |
-| 403 | RLS or permission denied | check org membership, dataset write policy |
-| 404 | resource missing OR not visible under RLS | distinguish by context; UI shows "not found" either way |
-| 409 | conflict (e.g. duplicate code, can't submit twice) | re-fetch state, surface to user |
-| 422 | validation error (data shape, schema mismatch) | server body usually has details — display it |
-| 429 | rate limit (if enabled upstream) | back off |
-| 5xx | server error | retry with backoff once; then surface |
+| Status | Meaning                                            | Action                                                  |
+| ------ | -------------------------------------------------- | ------------------------------------------------------- |
+| 400    | bad request shape                                  | check payload — likely a missing field or wrong UUID    |
+| 401    | no/invalid auth                                    | refresh session / re-acquire API key                    |
+| 403    | RLS or permission denied                           | check org membership, dataset write policy              |
+| 404    | resource missing OR not visible under RLS          | distinguish by context; UI shows "not found" either way |
+| 409    | conflict (e.g. duplicate code, can't submit twice) | re-fetch state, surface to user                         |
+| 422    | validation error (data shape, schema mismatch)     | server body usually has details — display it            |
+| 429    | rate limit (if enabled upstream)                   | back off                                                |
+| 5xx    | server error                                       | retry with backoff once; then surface                   |
 
 ## Retry policy
 
@@ -95,7 +107,9 @@ useEffect(() => {
       }
     }
   })();
-  return () => { cancelled = true; };
+  return () => {
+    cancelled = true;
+  };
 }, [datasetId]);
 ```
 
