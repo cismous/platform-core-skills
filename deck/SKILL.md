@@ -211,7 +211,7 @@ Notes:
 ### Query records with SQL
 
 ```bash
-# See available columns (field names shown in describe output, accessed via data->>'field')
+# See available columns with JSONB access paths (e.g. data->>'field')
 deck datasets query <dataset-id> --describe
 
 # Aggregate query — access fields via data->>'field_code' JSONB syntax
