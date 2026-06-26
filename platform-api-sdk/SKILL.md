@@ -189,4 +189,4 @@ The resource API (`platform.orgs / .apps / .datasets / .userDevices`) mirrors th
 3. **`PlatformApiError.status` is the canonical signal.** Don't `try { ... } catch { return null }` blindly — at minimum distinguish 401/403 (auth) from 404 (missing) from 5xx (retry-worthy).
 4. **Resource methods don't accept per-request `init`.** Auth is configured on the client, not on the call. If you need a different auth/header per call, build a separate client (see `createPlatformWithApiKey` for the canonical pattern).
 5. **`destroyDefaultClients()` is rarely needed.** Default clients hold no timers until a primary fails; call only when intentionally tearing down (hot reload, test cleanup).
-6. **获取记录总数用 `countRecords()` 或 `listRecords()` 的 `pagination.total`**。读取 `dataset.recordCount` 物化列，毫秒级返回，无需全表 COUNT(*)。
+6. **获取记录总数用 `countRecords()` 或 `listRecords()` 的 `pagination.total`**。读取 `dataset.recordCount` 物化列，毫秒级返回，无需全表 COUNT(\*)。

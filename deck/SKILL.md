@@ -226,11 +226,11 @@ SELECT data->>'spu_code' AS spu_code, (data->>'amount')::numeric AS amount FROM 
 
 **Type casting**
 
-| Field type | Access pattern             | Aggregation / comparison            |
-| ---------- | -------------------------- | ----------------------------------- |
-| string     | `data->>'field_code'`      | Use directly                        |
+| Field type | Access pattern                   | Aggregation / comparison           |
+| ---------- | -------------------------------- | ---------------------------------- |
+| string     | `data->>'field_code'`            | Use directly                       |
 | number     | `(data->>'field_code')::numeric` | **Must cast** or treated as string |
-| boolean    | `(data->>'field_code')::boolean` | **Must cast**                  |
+| boolean    | `(data->>'field_code')::boolean` | **Must cast**                      |
 
 **System columns** (available directly, no JSONB access needed):
 
@@ -268,7 +268,7 @@ Query restrictions (security):
 - Queries run under a read-only database role (`data_analyst`) with RLS bypassed (CTE enforces per-dataset isolation).
 - Default timeout: 30s (max 60s). Default row limit: 1000 (max 10000).
 
-**Record count is now millisecond-fast**: `dataset.recordCount` is maintained by triggers. `countRecords()` and `listRecords()` read this column directly, no full-table COUNT(*) needed. Recommended ways to get record count:
+**Record count is now millisecond-fast**: `dataset.recordCount` is maintained by triggers. `countRecords()` and `listRecords()` read this column directly, no full-table COUNT(\*) needed. Recommended ways to get record count:
 
 - `deck datasets records list <dataset-id> --json` — check the `pagination.total` field
 - SDK: `platform.datasets.countRecords(datasetId)` — reads the recordCount materialized column

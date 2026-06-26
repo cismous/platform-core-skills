@@ -46,7 +46,7 @@ The platform **does** paginate `listRecords` — pass `{ page, pageSize }` and r
 
 ### 获取记录总数
 
-`listRecords` 返回的 `pagination.total` 和 `countRecords` 接口直接读取 `dataset.recordCount` 物化列，毫秒级返回，无需全表 COUNT(*)。
+`listRecords` 返回的 `pagination.total` 和 `countRecords` 接口直接读取 `dataset.recordCount` 物化列，毫秒级返回，无需全表 COUNT(\*)。
 
 ```ts
 // 方式一：listRecords 返回的 pagination.total
