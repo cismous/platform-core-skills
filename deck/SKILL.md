@@ -47,7 +47,9 @@ deck
 │   │   ├── add <schema-version-id> --code <code> --type <type> [--label "<name>"] [--required] [--ui-type <hint>] [--order N] [--default '<json>'] [--constraints '<json>']
 │   │   ├── update <field-id> [--code <new>] [--label "<name>"] [--required] [--ui-type <hint>] [--order N] [--default '<json>'] [--constraints '<json>']
 │   │   └── delete <field-id> (alias: rm)
-│   ├── query <dataset-id> --sql '<SQL>' [--limit N] [--timeout N] [--describe]
+│   ├── query <dataset-id> --sql '<SQL>' [--limit N] [--timeout N] [--work-mem 128MB] [--describe]
+│   ├── index
+│   │   └── create <dataset-id> --field <fieldCode>   # create partial expression index
 │   └── records (alias: r, record)
 │       ├── list <dataset-id> [--page N] [--page-size N]
 │       ├── get <dataset-id> <record-id>
@@ -70,7 +72,7 @@ deck
 │   ├── logout
 │   ├── status
 │   └── whoami
-├── query --datasets "alias=code,..." --sql '<SQL>' [--limit N] [--timeout N] [--describe]
+├── query --datasets "alias=code,..." --sql '<SQL>' [--limit N] [--timeout N] [--work-mem 128MB] [--describe]
 ├── whoami
 ├── upgrade [--check]
 ├── version
@@ -260,6 +262,11 @@ deck datasets query <dataset-id> \
     --sql "SELECT * FROM records" \
     --limit 5000 \
     --timeout 20
+
+# Tune memory for large queries
+deck datasets query <dataset-id> \
+    --sql "SELECT data->>'spu_code', COUNT(*) FROM records GROUP BY data->>'spu_code'" \
+    --work-mem 256MB
 ```
 
 Query restrictions (security):
@@ -311,6 +318,45 @@ Cross-dataset query notes:
 - Up to 5 datasets per query. All must belong to the same app (resolved via `--app`).
 - Number fields in JOIN conditions and aggregations **must** be cast with `::numeric`.
 - Same security restrictions as single-dataset query (read-only, RLS, timeout).
+
+### Query Optimization
+
+**Performance tips for large datasets** (100K+ records):
+
+1. **Create partial expression indexes on JOIN/GROUP BY fields** — this is the single most impactful optimization. Without indexes, PostgreSQL must do full table hash joins that spill to disk.
+   ```bash
+   # Index JOIN keys (both sides)
+   deck datasets index create spu --field merchant_code
+   deck datasets index create order-items --field spu_code
+
+   # Index GROUP BY / WHERE fields
+   deck datasets index create spu --field series
+   deck datasets index create spu --field big_cat
+   ```
+   Indexes are partial (`WHERE datasetId = '...'`), scoped to one dataset, and do not affect other datasets.
+
+2. **Tune work_mem per query** — for large JOINs (>1M rows), increase work_mem to avoid disk spill:
+   ```bash
+   deck query --datasets "oi=order-items,s=spu" --work-mem 256MB --sql "..."
+   ```
+   Note: work_mem only helps if the planner chooses Hash Join. With indexes, the planner may prefer Nested Loop (which doesn't use work_mem). Both plans are valid — the planner picks the faster one.
+
+3. **Always use LIMIT** — large result sets (100K+ rows) waste bandwidth and memory. The default is 1000 rows.
+
+4. **Avoid unnecessary DISTINCT on high-cardinality fields** — `COUNT(DISTINCT data->>'field')` on a field with millions of unique values is expensive. Prefer `COUNT(*)` where possible.
+
+5. **Cast numeric fields once** — `(data->>'amount')::numeric` is parsed per row. Avoid repeated casts in the same query.
+
+**When to create indexes**:
+- Fields used in JOIN conditions (both sides)
+- Fields used in WHERE with equality filters
+- Fields used in GROUP BY
+- **Skip**: fields only used in SUM/AVG/COUNT aggregation, ORDER BY on computed values, numeric fields used with range conditions
+
+**Expected performance** (reference, 3.66M records, 32GB RAM server):
+- No indexes, 128MB work_mem: disk full error
+- With indexes, Nested Loop: 6-19s (typical)
+- With indexes, forced Hash Join: 20-44s (slower, disk spill)
 
 ### Switch environments
 
@@ -385,3 +431,5 @@ When the server returns 4xx/5xx, deck prints `HTTP <status>: <body>` — the bod
 - For cross-dataset JOIN queries: `deck query --datasets "a=ds1,b=ds2" --sql "SELECT ... FROM a JOIN b ON ..." --json`
 - Use `deck query --datasets "ds1,ds2" --describe` to see columns across multiple datasets before writing a JOIN query.
 - **Get record counts via `recordCount` materialized column**: `dataset.recordCount` is maintained by triggers, returns in milliseconds. `countRecords()`/`listRecords()` both read this column. `SELECT COUNT(*) FROM records` also works efficiently due to pass-through CTE + NOT MATERIALIZED.
+- **Create partial indexes on JOIN/GROUP BY fields**: `deck datasets index create <ds> --field <fieldCode>`. Indexes are scoped to one dataset (partial WHERE datasetId = ...) and do not affect other datasets. Only create indexes on fields actually used in JOIN/WHERE/GROUP BY — don't blindly index everything.
+- **Tune query memory**: for large JOINs (>1M rows), use `--work-mem 256MB` or `--work-mem 512MB` to reduce disk spill. The default is 128MB.
